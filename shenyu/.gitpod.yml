@@ -1,0 +1,71 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+image:
+    file: .gitpod.Dockerfile
+
+additionalRepositories:
+    - url: https://github.com/apache/shenyu-dashboard.git
+      checkoutLocation: frontend
+
+tasks:
+
+    - name: Run backend
+      before: cd ./shenyu-admin
+      command: |
+          gp sync-await setup-backend
+          mvn spring-boot:run
+
+    - name: Run frontend
+      before: cd ../frontend
+      command: |
+          gp sync-await setup-frontend && gp ports await 9095
+          npm start
+      openMode: split-right
+
+    - name: Setup backend
+      init: |
+          mvn clean install -DskipTests
+      command: |
+          gp sync-done setup-backend
+          exit 0
+
+    - name: Setup frontend
+      before: cd ../frontend
+      init: |
+          npm install
+      command: |
+          gp sync-done setup-frontend
+          exit 0
+      openMode: split-right
+
+vscode:
+    extensions:
+        - vscjava.vscode-java-pack
+        - editorconfig.editorconfig
+        - dbaeumer.vscode-eslint
+        - stylelint.vscode-stylelint
+        - DavidAnson.vscode-markdownlint
+        - ms-azuretools.vscode-docker
+        - cweijan.vscode-database-client2
+        - GitHub.vscode-pull-request-github
+
+ports:
+    - port: 9095
+      onOpen: ignore
