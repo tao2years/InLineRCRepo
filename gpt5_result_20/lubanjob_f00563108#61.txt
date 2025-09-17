@@ -1,0 +1,61 @@
+好的！下面给出 3 个**正向补丁**（RC3 → RC2 → RC1），行号全部以你提供的**最终代码**为准，且**不触碰**第 160–204 行的“\[禁止修改-目标实现]”。
+
+---
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 将原本位于 38–87 行、使用 `Class<T>` 的 `postForObject` 重载，演进为可接收 `ParameterizedTypeReference<T>` 的重载，为后续 GET 侧泛型化打基础。
+
+```json
+[
+  {
+    "file_path": "AbstractRemoteCallService.java",
+    "start_line": 38,
+    "end_line": 87,
+    "diff_content": "@@ -38,50 +38,50 @@\n-protected <T> T postForObject(String url, Object request, Class<T> responseType) {\n-\n-        List<String> availableAddress = serviceAvailableDetectService.getAvailableUrls();\n-\n-        if (availableAddress.isEmpty()) {\n-            throw new ApiClientException(\"not available address:\");\n-        }\n-        RestTemplate templete = getLubanRestTemplate();\n-        HttpHeaders headers = new HttpHeaders();\n-        headers.setContentType(MediaType.APPLICATION_JSON);\n-        // 未来此处可以添加body体\n-        String requestBody = JSON.toJSONString(request);\n-        HttpEntity<String> requestEntity = new HttpEntity<String>(requestBody, headers);\n-\n-        ResponseEntity<String> response = null;\n-\n-        // 挨个地址去调用,防止某个服务发布不可用造成调用失败\n-        RestClientException ex = null;\n-        for (String str : availableAddress) {\n-            try {\n-                String address = str + url;\n-                response = templete.exchange(address, HttpMethod.POST, requestEntity, String.class);\n-                break;\n-            } catch (RestClientResponseException logException) { // 服务器端返回错误了\n-                int status = logException.getRawStatusCode();\n-                String body = logException.getResponseBodyAsString();\n-                LOG.warn(\"getForObject has restClientResponseException, message: \" + body, logException);\n-                ErrorMessage em = JSON.parseObject(logException.getResponseBodyAsString(), ErrorMessage.class);\n-                if (em == null) {\n-                    throw new ApiClientException(body, logException);\n-                }\n-                if (em.getErrorCode() == null) {\n-                    throw new ApiClientException(\"server return wrong vo:status:\" + status + \",body:\" + body);\n-                } else {\n-                    throw new ApiClientException(em);\n-                }\n-\n-            } catch (RestClientException logException) { // 客户端的数据\n-\n-                ex = logException;\n-                continue;\n-            }\n-        }\n-\n-        if (response == null) {\n-            throw new ApiClientException(\"failed to call:\" + availableAddress.toString(), ex);\n-        }\n-\n-        String result = response.getBody();\n-        return JSON.parseObject(result, responseType);\n-    }\n+protected <T> T postForObject(String url, Object request, ParameterizedTypeReference<T> responseType) {\n+\n+        List<String> availableAddress = serviceAvailableDetectService.getAvailableUrls();\n+\n+        if (availableAddress.isEmpty()) {\n+            throw new ApiClientException(\"not available address:\");\n+        }\n+        RestTemplate templete = getLubanRestTemplate();\n+        HttpHeaders headers = new HttpHeaders();\n+        headers.setContentType(MediaType.APPLICATION_JSON);\n+        // 未来此处可以添加body体\n+        String requestBody = JSON.toJSONString(request);\n+        HttpEntity<String> requestEntity = new HttpEntity<String>(requestBody, headers);\n+\n+        ResponseEntity<T> response = null;\n+\n+        // 挨个地址去调用,防止某个服务发布不可用造成调用失败\n+        RestClientException ex = null;\n+        for (String str : availableAddress) {\n+            try {\n+                String address = str + url;\n+                response = templete.exchange(address, HttpMethod.POST, requestEntity, responseType);\n+                break;\n+            } catch (RestClientResponseException logException) { // 服务器端返回错误了\n+                int status = logException.getRawStatusCode();\n+                String body = logException.getResponseBodyAsString();\n+                LOG.warn(\"getForObject has restClientResponseException, message: \" + body, logException);\n+                ErrorMessage em = JSON.parseObject(logException.getResponseBodyAsString(), ErrorMessage.class);\n+                if (em == null) {\n+                    throw new ApiClientException(body, logException);\n+                }\n+                if (em.getErrorCode() == null) {\n+                    throw new ApiClientException(\"server return wrong vo:status:\" + status + \",body:\" + body);\n+                } else {\n+                    throw new ApiClientException(em);\n+                }\n+\n+            } catch (RestClientException logException) { // 客户端的数据\n+\n+                ex = logException;\n+                continue;\n+            }\n+        }\n+\n+        if (response == null) {\n+            throw new ApiClientException(\"failed to call:\" + availableAddress.toString(), ex);\n+        }\n+\n+        return response.getBody();\n+    }\n"
+  }
+]
+```
+
+---
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 将旧的 GET 方法（使用 `Class<T>` 且直接 `getForObject`）升级为基于 `exchange` + `HttpEntity` 的实现，并改用 `ParameterizedTypeReference<T>`，对应最终版 205–249 行。
+
+```json
+[
+  {
+    "file_path": "AbstractRemoteCallService.java",
+    "start_line": 205,
+    "end_line": 249,
+    "diff_content": "@@ -205,45 +205,45 @@\n-protected <T> T getForObject(String url, Class<T> responseType) {\n-        List<String> availableAddress = serviceAvailableDetectService.getAvailableUrls();\n-        if (availableAddress.isEmpty()) {\n-            throw new ApiClientException(\"not available address:\");\n-        }\n-        RestTemplate templete = getLubanRestTemplate();\n-        ResponseEntity<T> response = null;\n-        RestClientException ex = null;\n-        for (String str : availableAddress) {\n-            try {\n-                String address = str + url;\n-                response = templete.getForEntity(address, responseType);\n-                break;\n-            } catch (RestClientResponseException logException) { // 服务器端返回错误了\n-                int status = logException.getRawStatusCode();\n-                String body = logException.getResponseBodyAsString();\n-                LOG.warn(\"getForObject has restClientResponseException, message: \" + body, logException);\n-                ErrorMessage em = JSON.parseObject(logException.getResponseBodyAsString(), ErrorMessage.class);\n-                if (em == null) {\n-                    throw new ApiClientException(body, logException);\n-                } else if (em.getErrorCode() == null) {\n-                    throw new ApiClientException(\"server return wrong vo:status:\" + status + \",body:\" + body);\n-                } else {\n-                    throw new ApiClientException(em);\n-                }\n-            } catch (RestClientException logException) { // 客户端的数据\n-                ex = logException;\n-                continue;\n-            }\n-        }\n-\n-        if (response == null) {\n-            throw new ApiClientException(\"failed to call:\" + availableAddress.toString(), ex);\n-        }\n-\n-        return response.getBody();\n-    }\n+protected <T> T getForObject(String url, ParameterizedTypeReference<T> responseType) {\n+        List<String> availableAddress = serviceAvailableDetectService.getAvailableUrls();\n+        if (availableAddress.isEmpty()) {\n+            throw new ApiClientException(\"not available address:\");\n+        }\n+        RestTemplate templete = getLubanRestTemplate();\n+        HttpHeaders headers = new HttpHeaders();\n+        headers.setContentType(MediaType.APPLICATION_JSON);\n+        // 未来此处可以添加body体\n+\n+        HttpEntity<String> requestEntity = new HttpEntity<String>(null, headers);\n+\n+        ResponseEntity<T> response = null;\n+\n+        // 挨个地址去调用,防止某个服务发布不可用造成调用失败\n+        RestClientException ex = null;\n+        for (String str : availableAddress) {\n+            try {\n+                String address = str + url;\n+                response = templete.exchange(address, HttpMethod.GET, requestEntity, responseType);\n+                break;\n+            } catch (RestClientResponseException logException) { // 服务器端返回错误了\n+                int status = logException.getRawStatusCode();\n+                String body = logException.getResponseBodyAsString();\n+                LOG.warn(\"getForObject has restClientResponseException, message: \" + body, logException);\n+                ErrorMessage em = JSON.parseObject(logException.getResponseBodyAsString(), ErrorMessage.class);\n+                if (em == null) {\n+                    throw new ApiClientException(body, logException);\n+                } else if (em.getErrorCode() == null) {\n+                    throw new ApiClientException(\"server return wrong vo:status:\" + status + \",body:\" + body);\n+                } else {\n+                    throw new ApiClientException(em);\n+                }\n+            } catch (RestClientException logException) { // 客户端的数据\n+                ex = logException;\n+                continue;\n+            }\n+        }\n+\n+        if (response == null) {\n+            throw new ApiClientException(\"failed to call:\" + availableAddress.toString(), ex);\n+        }\n+\n+        return response.getBody();\n+    }\n"
+  }
+]
+```
+
+---
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 更新 150–159 行的 Javadoc，声明“新的get方法”，为使用 `ParameterizedTypeReference<T>` 的版本提供文档提示，与最终实现对齐。
+
+```json
+[
+  {
+    "file_path": "AbstractRemoteCallService.java",
+    "start_line": 150,
+    "end_line": 159,
+    "diff_content": "@@ -150,10 +150,10 @@\n-    /**\n-     * 发送Get请求，并且获取结果转换成对象 <br>\n-     *\n-     * @param url\n-     * @param responseType\n-     * @param <T>\n-     * @return\n-     */\n+    /**\n+     * 新的get方法\n+     *\n+     * @param url\n+     * @param responseType\n+     * @param <T>\n+     * @return\n+     * @author lwx521892\n+     * @since 2019年12月19日\n+     */\n"
+  }
+]
+```
+
+---
+
+### notes
+
+* **RC3**：先把 **POST** 的 `Class<T>` 版本重载升级为 **`ParameterizedTypeReference<T>`** 版本，铺平“可反序列化复杂泛型”的能力；
+* **RC2**：再把 **GET** 的旧实现（基于 `getForEntity`/`Class<T>`）替换为 **`exchange` + `HttpEntity` + `ParameterizedTypeReference<T>`**，与 POST 侧保持一致；
+* **RC1**：最后补齐“新的get方法”的 Javadoc，明确这是面向泛型响应的新实现；
+* 三个补丁均为**正向演进**，所有 **+ 行**均与最终代码在相同行号处完全一致，且严格未修改 **\[禁止修改-目标实现]**（160–204 行）。

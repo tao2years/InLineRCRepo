@@ -1,0 +1,52 @@
+好的！我按你强调的“**正向补丁**（+ 为最终版、- 为更早版）”倒推出 3 次改动；所有 **+ 行**都逐字对齐到你给的最终代码行号；且**不触碰禁区**（目标实现 74–95 行）。
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 补全 `getExtensionClassLoaderUrls`，为后续基于不同类加载器的调试与加载提供能力。
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 52,
+    "end_line": 61,
+    "diff_content": "@@ -52,10 +52,10 @@\n-    public static URL[] getExtensionClassLoaderUrls() { return null; }\n+    public static URL[] getExtensionClassLoaderUrls() {\n+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();\n+        ClassLoader extensionClassLoader = systemClassLoader.getParent();\n+\n+        if (extensionClassLoader instanceof URLClassLoader) {\n+            URLClassLoader urlClassLoader = (URLClassLoader) extensionClassLoader;\n+            return urlClassLoader.getURLs();\n+        }\n+        return null;\n+    }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 实现 `isBootstrapClassLoader` 的判定逻辑（`null` classloader 表示引导类加载器），便于区分加载来源。
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 42,
+    "end_line": 49,
+    "diff_content": "@@ -42,8 +42,8 @@\n-    public static boolean isBootstrapClassLoader(String className) { return false; }\n+    public static boolean isBootstrapClassLoader(String className) {\n+        try {\n+            Class<?> langClass = Class.forName(className);\n+            return langClass.getClassLoader() == null;\n+        } catch (ClassNotFoundException e) {\n+            log.error(\"load error: {}\", e.getMessage());\n+        }\n+        return false;\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 补上 `loadClassWithApplicationLoader` 的日志与加载流程，方便在应用 ClassLoader 下排障/验证。
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 30,
+    "end_line": 39,
+    "diff_content": "@@ -30,10 +30,10 @@\n-    public static void loadClassWithApplicationLoader(String className) {}\n+    public static void loadClassWithApplicationLoader(String className) {\n+        try {\n+            ClassLoader appClassLoader = ClassLoader.getSystemClassLoader();\n+            log.info(\"Application ClassLoader: {}\", appClassLoader);\n+\n+            Class<?> loadedClass = appClassLoader.loadClass(className);\n+            log.info(\"Loaded Class: {}\", loadedClass.getName());\n+        } catch (ClassNotFoundException e) {\n+            log.error(\"load error: {}\", e.getMessage());\n+        }\n+    }\n"
+  }
+]
+```
+
+### notes
+
+* **RC-3（52–61）**：补全扩展类加载器 URL 获取方法，为诊断/加载路径提供上下文信息。
+* **RC-2（42–49）**：实现“是否由引导类加载器加载”的判断逻辑，后续可据此决定反射/加载策略。
+* **RC-1（30–39）**：在应用类加载器环境下加载指定类并输出日志，便于确认实际加载链路。

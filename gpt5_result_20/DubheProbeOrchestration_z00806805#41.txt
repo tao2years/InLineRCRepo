@@ -1,0 +1,57 @@
+好的！基于你给的**最终代码**（行号以最终版为准），我倒推出 3 次**正向补丁**（RC3→RC2→RC1），且严格不触碰 **\[禁止修改-目标实现]**（第 28–33 行）。
+
+---
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 为后续新增 `uniqueKey` 语义做文档准备：在 `buildOrder` 的 Javadoc 中补充 `@param uniqueKey` 的说明。
+
+```json
+[
+  {
+    "file_path": "BaseDao.java",
+    "start_line": 82,
+    "end_line": 85,
+    "diff_content": "@@ -82,4 +82,4 @@\n-     * @param request      查询条件\n-     * @param queryWrapper 构建对象\n-     *\n-     */\n+     * @param request      查询条件\n+     * @param queryWrapper 构建对象\n+     * @param uniqueKey    唯一主键（传入如果不为空，则自动添加一条根据默认主键升序方法）\n+     */\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 落地 `uniqueKey` 能力：将 `buildOrder` 方法签名扩展为三参，并在排序逻辑中在末尾补充按 `uniqueKey` 升序的稳定排序。
+
+```json
+[
+  {
+    "file_path": "BaseDao.java",
+    "start_line": 86,
+    "end_line": 95,
+    "diff_content": "@@ -86,10 +86,10 @@\n-    public void buildOrder(QueryRequest request, QueryWrapper<T> queryWrapper) {\n+    public void buildOrder(QueryRequest request, QueryWrapper<T> queryWrapper, String uniqueKey) {\n         if (request.getSortOrder() != null && request.getSortColumn() != null) {\n             queryWrapper.orderBy(\n                     true, SortOrderEnum.ASC.equals(request.getSortOrder()), request.getSortColumn());\n         }\n-\n+        \n+        if (ObjectUtils.isNotEmpty(uniqueKey)) {\n+            queryWrapper.orderBy(true, true, uniqueKey);\n+        }\n     }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 适配调用方：将已有的无 `uniqueKey` 重载实现改为向新签名透传 `null`，保持行为不变同时兼容新能力。
+
+```json
+[
+  {
+    "file_path": "BaseDao.java",
+    "start_line": 22,
+    "end_line": 26,
+    "diff_content": "@@ -22,5 +22,5 @@\n     public QueryWrapper<T> buildQueryWrapper(QueryRequest request) {\n         QueryWrapper<T> queryWrapper = new QueryWrapper<>();\n         buildCondition(request, queryWrapper);\n-        buildOrder(request, queryWrapper);\n+        buildOrder(request, queryWrapper, null);\n         return queryWrapper;\n     }\n"
+  }
+]
+```
+
+---
+
+### notes
+
+* **RC3** 只改注释，先给团队传达即将引入的 `uniqueKey` 语义，避免误解；
+* **RC2** 扩展 `buildOrder` 为三参并实现“若提供 `uniqueKey` 则追加升序”的稳定排序，奠定能力基础；
+* **RC1** 更新无 `uniqueKey` 的封装调用，显式传 `null`，既不改变原行为又与新签名对齐；
+* 三个补丁均为**正向演进**，`+` 行完全匹配最终代码；且未改动 **\[禁止修改-目标实现]**（28–33 行）。

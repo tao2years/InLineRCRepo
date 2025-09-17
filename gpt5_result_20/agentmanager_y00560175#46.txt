@@ -1,0 +1,52 @@
+好的，这次我按你强调的“**正向补丁**（+ 为最终版，- 为更早版）”来倒推 3 次改动，并且只在**非禁区**动手（不触碰 `mergeOrderOperator` 的 61–71 行）。每个 hunk 的 `+` 行都能在你给的最终代码里逐行对齐。
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 先把**积分计算**方式稳定为“用户当前积分 + 订单金额”，为后面合并订单时计算汇总积分打基础。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 77,
+    "end_line": 79,
+    "diff_content": "@@ -77,3 +77,3 @@\n     public static BiFunction<Customer, Order, Integer> totalPointCalculator() {\n-        return (customer, order) -> 0;\n+        return (customer, order) -> customer.getPoints() + (int) order.getAmount();\n     }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 引入**按比例奖励积分**的标准实现，统一积分变更风格（函数式写法），为合并/汇总等操作提供一致的积分语义。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 53,
+    "end_line": 59,
+    "diff_content": "@@ -53,1 +53,7 @@\n-    public static UnaryOperator<Customer> addBonusOperator(double ratio) { return customer -> customer; }\n+    public static UnaryOperator<Customer> addBonusOperator(double ratio) {\n+        return customer -> {\n+            int currentPoints = customer.getPoints();\n+            int bonus = (int) (currentPoints * ratio);\n+            customer.addPoints(bonus);\n+            return customer;\n+        };\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 规范**订单构造**工具：把按商品列表生成订单的实现从“固定 0 金额”替换为**真实汇总金额**，与合并订单的金额相加语义一致。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 101,
+    "end_line": 105,
+    "diff_content": "@@ -101,3 +101,5 @@\n-    public static BiFunction<Customer, List<Product>, Order> createOrderGenerator() { return (customer, products) -> new Order(customer, \"ORD0\", 0.0); }\n+    public static BiFunction<Customer, List<Product>, Order> createOrderGenerator() {\n+        return (customer, products) -> {\n+            double sum = products.stream().mapToDouble(o -> o.getPrice() * o.getAmount()).sum();\n+            return new Order(customer, \"ORD\" + System.currentTimeMillis(), sum);\n+        };\n+    }\n"
+  }
+]
+```
+
+### notes
+
+* **RC-3（77–79）**：把 `totalPointCalculator()` 从占位实现替换为“当前积分 + 订单金额”的真实计算；这让**积分合并**的语义先行固定，为后续在 `mergeOrderOperator` 中求和积分提供一致口径。
+* **RC-2（53–59）**：补上 `addBonusOperator(double)` 的完整实现，形成统一的**积分变更**范式（函数式），便于在订单合并前后进行一致的积分处理。
+* **RC-1（101–105）**：将 `createOrderGenerator()` 从固定金额的占位实现替换为**基于商品列表汇总金额**的实现，使订单金额来源与 `mergeOrderOperator` 的**金额相加**逻辑保持一致。

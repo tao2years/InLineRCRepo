@@ -1,0 +1,63 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 补齐**领域模型**以支撑权限判断：引入 `User` 类（用户名 / 角色集合 / 是否激活）。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 155,
+    "end_line": 179,
+    "diff_content": "@@ -155,0 +155,25 @@\n+ 155: class User {\n+ 156:     private String username;\n+ 157: \n+ 158:     private List<String> roles;\n+ 159: \n+ 160:     private boolean active;\n+ 161: \n+ 162:     public User(String username, List<String> roles, boolean active) {\n+ 163:         this.username = username;\n+ 164:         this.roles = roles;\n+ 165:         this.active = true;\n+ 166:     }\n+ 167: \n+ 168:     public String getUsername() {\n+ 169:         return username;\n+ 170:     }\n+ 171: \n+ 172:     public List<String> getRoles() {\n+ 173:         return roles;\n+ 174:     }\n+ 175: \n+ 176:     public boolean isActive() {\n+ 177:         return active;\n+ 178:     }\n+ 179: }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 引入**函数式工具**以统一风格（与目标实现中的 `BiPredicate` 风格保持一致）：非管理员校验与主机冲突校验。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 85,
+    "end_line": 94,
+    "diff_content": "@@ -85,0 +85,10 @@\n+  85:     public static Predicate<User> createNonAdminValidator() {\n+  86:         Predicate<User> isActive = User::isActive;\n+  87:         Predicate<User> isAdmin = user -> user.getRoles().contains(\"ADMIN\");\n+  88:         return isActive.and(isAdmin.negate());\n+  89:     }\n+  90: \n+  91:     public static BiPredicate<HostInfoVO, HostInfoVO> hostConflictValidator() {\n+  92:         return (host1, host2) -> host1.getHostIp().equals(host2.getHostIp()) && host1.getHostName()\n+  93:             .equals(host2.getHostName());\n+  94:     }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 完成**日志与常量**收口，便于在权限校验等流程中观测与复用。
+
+```json
+[
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 2,
+    "end_line": 2,
+    "diff_content": "@@ -2,0 +2,1 @@\n+   2:     private static final Logger LOGGER = LoggerFactory.getLogger(FunctionalDemo.class);\n"
+  },
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 4,
+    "end_line": 4,
+    "diff_content": "@@ -4,0 +4,1 @@\n+   4:     public static final int BATCH_SIZE = 1000;\n"
+  },
+  {
+    "file_path": "FunctionalDemo.java",
+    "start_line": 6,
+    "end_line": 10,
+    "diff_content": "@@ -6,0 +6,5 @@\n+   6:     public static final Consumer<Map<String, String>> CL_FLAG = map -> {\n+   7:         map.put(\"AZ_FLAG\", \"AZ_CODE\");\n+   8:         map.put(\"SECURITY_AREA_FLAG\", \"SECURITY_AREA_CODE\");\n+   9:         map.put(\"REGION_FLAG\", \"REGION_CODE\");\n+  10:     };\n"
+  }
+]
+```
+
+### notes
+
+* **RC-3**：先补齐 `User` 模型（第 **155–179** 行），让后续权限判断有明确的数据结构可依赖。
+* **RC-2**：再引入与目标实现一致的**函数式风格**工具方法（第 **85–94** 行），使代码库已有 `Predicate`/`BiPredicate` 的统一用法，为 `checkUserPermission(..)` 过渡铺垫。
+* **RC-1**：最后补齐**日志记录与通用常量**（第 **2**、**4**、**6–10** 行），方便在权限校验等流程中观测与复用。
+

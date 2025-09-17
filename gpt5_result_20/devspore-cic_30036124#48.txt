@@ -1,0 +1,61 @@
+好的，收到！我基于你给的**最终代码**（行号 1–15）来倒推 3 次**正向补丁**，并且严格不触碰已标注为 **\[禁止修改-目标实现]** 的 2–14 行。
+每个补丁里：
+
+* `+` 行 = 最终代码中存在的内容；
+* `-` 行 = 更早版本里被替换掉的内容；
+* 行号以最终代码为准。
+
+---
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 将类名从早期占位名规范为工具类命名，确立最终类名。
+
+```json
+[
+  {
+    "file_path": "UrlClassLoaderUtils.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-public class ClassPathUrlLoader {\n+public class UrlClassLoaderUtils {\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 收尾清理：去掉类结尾处的过期注释，保持与最终格式一致。
+
+```json
+[
+  {
+    "file_path": "UrlClassLoaderUtils.java",
+    "start_line": 15,
+    "end_line": 15,
+    "diff_content": "@@ -15,1 +15,1 @@\n-} // end of ClassPathUrlLoader\n+}\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 统一代码风格：在类名与花括号之间补空格，使声明与最终版完全一致。
+
+```json
+[
+  {
+    "file_path": "UrlClassLoaderUtils.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-public class UrlClassLoaderUtils{\n+public class UrlClassLoaderUtils {\n"
+  }
+]
+```
+
+---
+
+### notes
+
+* 三个补丁都是**朝向最终版的正向演进**：`+` 行与最终文件逐字匹配；`-` 行为历史内容。
+* 仅修改了允许变动的上下文（第 **1**、**15** 行），**未触碰**任何 **\[禁止修改-目标实现]**（2–14 行）。
+* 语义路径：RC3 确立正确类名 → RC2 清理尾部注释 → RC1 做最终的格式化微调。

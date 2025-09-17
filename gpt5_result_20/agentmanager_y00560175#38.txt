@@ -1,0 +1,69 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 为 `getPoolByZone(..)` 的日志输出铺路：引入统一的 `LOGGER` 字段。
+
+```json
+[
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 5,
+    "end_line": 5,
+    "diff_content": "@@ -5,0 +5,1 @@\n+  5:     private static final Logger LOGGER = LoggerFactory.getLogger(AgentPoolServiceImpl.class);"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 为 `getPoolByZone(..)` 准备所需依赖与注入方式：开启构造器注入并补齐 DAO/Manager 字段。
+
+```json
+[
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 2,
+    "end_line": 2,
+    "diff_content": "@@ -2,0 +2,1 @@\n+  2: @RequiredArgsConstructor"
+  },
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 9,
+    "end_line": 13,
+    "diff_content": "@@ -7,1 +7,7 @@\n   7:     private final VmPoolDao vmPoolDao;\n+  9:     private final VmPoolDaoV2 vmPoolDaoV2;\n+ 11:     private final IDcsInfoDao dcsInfoDao;\n+ 13:     private final OperateAuditManager operateAuditManager;"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 补齐最终版里在其他方法中复用的**审计与对象复制**能力，保持与最终实现一致，从而不破坏 `getPoolByZone(..)` 的只读逻辑。
+
+```json
+[
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 24,
+    "end_line": 26,
+    "diff_content": "@@ -24,0 +24,3 @@\n+ 24:         LOGGER.info(\"updatePoolInfo: poolDO = {}\", poolDO);\n+ 25:         operateAuditManager.save(operateAuditManager.getOperateRecords(oldVmPoolDO, poolDO\n+ 26:                 , DevCloudTokenStore.getUserId(), ResourceType.VM_POOL, poolDO.getPoolId()));"
+  },
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 50,
+    "end_line": 58,
+    "diff_content": "@@ -50,0 +50,9 @@\n+ 50:     private void addOperationLog(String dcsName, List<VmPoolDO> vmPoolDOS) {\n+ 51:         vmPoolDOS.forEach(vmPoolDO -> {\n+ 52:             VmPoolDO vmPoolDONew = getVmPoolDO(vmPoolDO);\n+ 53:             vmPoolDONew.setDcsName(dcsName);\n+ 54:             List<OperateRecord> updateEvents = operateAuditManager.getOperateRecords(vmPoolDO, vmPoolDONew,\n+ 55:                     DevCloudTokenStore.getUserId(), ResourceType.VM_POOL, vmPoolDO.getPoolId());\n+ 56:             operateAuditManager.save(updateEvents);\n+ 57:         });\n+ 58:     }"
+  },
+  {
+    "file_path": "AgentPoolServiceImpl.java",
+    "start_line": 60,
+    "end_line": 70,
+    "diff_content": "@@ -60,0 +60,11 @@\n+ 60:     private static VmPoolDO getVmPoolDO(VmPoolDO vmPoolDO) {\n+ 61:         VmPoolDO vmPoolDONew = new VmPoolDO();\n+ 62:         vmPoolDONew.setId(vmPoolDO.getId());\n+ 63:         vmPoolDONew.setPoolId(vmPoolDO.getPoolId());\n+ 64:         vmPoolDONew.setName(vmPoolDO.getName());\n+ 65:         vmPoolDONew.setType(vmPoolDO.getType());\n+ 66:         vmPoolDONew.setZone(vmPoolDO.getZone());\n+ 67:         vmPoolDONew.setDatabase(vmPoolDO.getDatabase());\n+ 68:         vmPoolDONew.setDcsName(vmPoolDO.getDcsName());\n+ 69:         return vmPoolDONew;\n+ 70:     }"
+  }
+]
+```
+
+### notes
+
+* **RC-3 ➜** 引入统一日志器（第 **5** 行），为 `getPoolByZone(..)` 的运行日志与异常日志打基础。
+* **RC-2 ➜** 采用 `@RequiredArgsConstructor`（第 **2** 行）并补齐 `vmPoolDaoV2`（第 **9** 行）、`dcsInfoDao`（第 **11** 行）、`operateAuditManager`（第 **13** 行）三个依赖字段，为方法内的数据查询与外部资源访问提供依赖注入。
+* **RC-1 ➜** 增加审计与对象复制的共用能力：在 `updatePoolInfo(..)` 中补齐审计落库（第 **24–26** 行），并新增 `addOperationLog(..)`（第 **50–58** 行）与 `getVmPoolDO(..)`（第 **60–70** 行）。这些准备性能力与类内其余逻辑保持一致，不触碰 **\[禁止修改-目标实现] 144–175** 行。
+

@@ -1,0 +1,60 @@
+好的，收到！以下给出 3 个**正向补丁**（RC3 → RC2 → RC1），所有 **+ 行**均与**最终代码**在相同行号处逐字匹配，且严格不触碰 5–12 行的“\[禁止修改-目标实现]”。
+
+---
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+> 统一 JDBC 映射并补齐泛型声明：把 `JdbcType` 从 `VARCHAR` 调整为 `LONGVARCHAR`，`@MappedTypes` 从 `Object.class` 调整为 `Map.class`，并将 `BaseTypeHandler` 的原始类型改为 `Map<String, Object>`，为后续 JSON 序列化/反序列化准确性打基础。
+
+```json
+[
+  {
+    "file_path": "MapObjectTypeHandler.java",
+    "start_line": 1,
+    "end_line": 4,
+    "diff_content": "@@ -1,4 +1,4 @@\n-@Slf4j\n-@MappedJdbcTypes(JdbcType.VARCHAR)\n-@MappedTypes(Object.class)\n-public class MapObjectTypeHandler extends BaseTypeHandler<Map> {\n+@Slf4j\n+@MappedJdbcTypes(JdbcType.LONGVARCHAR)\n+@MappedTypes(Map.class)\n+public class MapObjectTypeHandler extends BaseTypeHandler<Map<String, Object>> {\n"
+  }
+]
+```
+
+---
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+> 改造 JSON 解析：从旧的 `Map.class` 反序列化切换到 `TypeToken<Map<String,Object>>`，并增加 try/catch 与日志，保证异常情况下可控返回，为插入端 `toJson` 对称解析做准备。
+
+```json
+[
+  {
+    "file_path": "MapObjectTypeHandler.java",
+    "start_line": 28,
+    "end_line": 37,
+    "diff_content": "@@ -28,10 +28,10 @@\n-    private Map<String, Object> getMapByJson(String json) {\n-        if (StringUtils.isBlank(json)) {\n-            return new HashMap<>();\n-        }\n-        return JsonUtil.fromJson(json, Map.class);\n-    }\n+    private Map<String, Object> getMapByJson(String json) {\n+        try {\n+            return StringUtils.isBlank(json)\n+                    ? new HashMap<>()\n+                    : JsonUtil.fromJson(json, (new TypeToken<Map<String, Object>>() {\n+                    }).getType());\n+        } catch (Exception e) {\n+            log.error(e.getMessage());\n+        }\n+        return null;\n+    }\n"
+  }
+]
+```
+
+---
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+> 补充 `@Override` 标注，保证与 MyBatis `BaseTypeHandler` 的方法覆盖语义清晰，同时保持方法体不变，作为最终版本前的收口动作。
+
+```json
+[
+  {
+    "file_path": "MapObjectTypeHandler.java",
+    "start_line": 13,
+    "end_line": 25,
+    "diff_content": "@@ -13,13 +13,13 @@\n-    public Map<String, Object> getNullableResult(ResultSet rs, String columnName) throws SQLException {\n+    @Override\n+    public Map<String, Object> getNullableResult(ResultSet rs, String columnName) throws SQLException {\n         return getMapByJson(rs.getString(columnName));\n     }\n-\n-    public Map<String, Object> getNullableResult(ResultSet rs, int columnIndex) throws SQLException {\n+\n+    @Override\n+    public Map<String, Object> getNullableResult(ResultSet rs, int columnIndex) throws SQLException {\n         return getMapByJson(rs.getString(columnIndex));\n     }\n-\n-    public Map<String, Object> getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {\n+\n+    @Override\n+    public Map<String, Object> getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {\n         return getMapByJson(cs.getString(columnIndex));\n     }\n"
+  }
+]
+```
+
+---
+
+### notes
+
+* **RC3**：修正注解与泛型声明，确保数据库字段类型与 Java 端 `Map<String,Object>` 一致，避免原始类型导致的反序列化不精确与编译告警。
+* **RC2**：实现健壮的 JSON 反序列化（`TypeToken` + 异常日志），与最终版插入端 `JsonUtil.toJson(parameter)` 对称，保证读写一致性。
+* **RC1**：补齐方法覆盖注解，提升可读性与工具/编译器检查能力，作为功能完成前的最后整理。

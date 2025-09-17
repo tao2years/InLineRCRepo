@@ -1,0 +1,48 @@
+下面给出 3 轮“正向补丁”（RC3 → RC2 → RC1），所有 **+ 行**严格等于你提供的最终代码在相同行号处的内容，且**未触碰**第 17–22 行的“\[禁止修改-目标实现]”。
+
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "UniSystemService.java",
+    "start_line": 4,
+    "end_line": 5,
+    "diff_content": "@@ -4,2 +4,2 @@\n-// TODO: wire UniSystemRepository\n-// private UniSystemRepository uniSystemRepository;\n+@Autowired\n+private UniSystemRepository uniSystemRepository;\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "UniSystemService.java",
+    "start_line": 24,
+    "end_line": 32,
+    "diff_content": "@@ -24,2 +24,9 @@\n-// TODO: add query by workspace code\n-// public List<UniSystemResp> listUniSystemByUniWorkspaceCode(String uniWorkspaceCode){ return Collections.emptyList(); }\n+    /**\n+     * 根据作业空间编码查询关联的目标系统列表\n+     *\n+     * @param uniWorkspaceCode 作业空间编码\n+     * @return 目标系统列表\n+     */\n+    public List<UniSystemResp> listUniSystemByUniWorkspaceCode(String uniWorkspaceCode) {\n+        return uniSystemRepository.listUniSystemByUniWorkspaceCode(uniWorkspaceCode);\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "UniSystemService.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-// TODO: add logger\n+@Slf4j\n"
+  }
+]
+```
+
+### notes
+
+* **RC3**：先注入 `UniSystemRepository`（第 4–5 行），为目标分页查询方法提供数据访问能力。
+* **RC2**：补充按“作业空间编码”查询的方法（第 24–32 行），完善服务的查询能力，为分页接口的落地准备周边能力。
+* **RC1**：引入 `@Slf4j`（第 1 行），为类提供标准日志能力，便于后续/周边方法记录分页与查询日志。
+
+以上改动均为从早期版本逐步走向你给出的**最终版本**的“正向补丁”，且没有修改任何“\[禁止修改-目标实现]”区域的代码。
