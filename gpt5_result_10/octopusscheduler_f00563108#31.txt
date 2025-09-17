@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "CddlTypeHandler.java",
+    "start_line": 1,
+    "end_line": 2,
+    "diff_content": "@@ -1,2 +1,0 @@\n-  1: @MappedJdbcTypes(JdbcType.LONGVARCHAR)\n-  2: @MappedTypes(Cddl.class)"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "CddlTypeHandler.java",
+    "start_line": 2,
+    "end_line": 2,
+    "diff_content": "@@ -2,0 +2,1 @@\n+  2: @MappedTypes(Cddl.class)"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "CddlTypeHandler.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,0 +1,1 @@\n+  1: @MappedJdbcTypes(JdbcType.LONGVARCHAR)"
+  }
+]
+```
+
+### notes
+
+* **RC-3**：最早版本尚未添加任何 MyBatis 注解，只有类与泛型处理逻辑；先移除两行注解，为后续逐步补齐做起点。
+* **RC-2**：中间步骤先引入 `@MappedTypes(Cddl.class)`，让类型处理器与 `Cddl` 建立关联。
+* **RC-1**：最后一步补上 `@MappedJdbcTypes(LONGVARCHAR)`，将 JDBC 类型映射与类型处理器绑定，至此即可到达最终实现。

@@ -1,0 +1,109 @@
+{
+  "timestamp": "2025-09-17T09:23:48.155144",
+  "total_benchmarks": 10,
+  "successful": 10,
+  "failed": 0,
+  "total_validation_issues": 0,
+  "results": [
+    {
+      "benchmark_id": "devspore-cic_30036124#4",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "DevUC-common_x00636091#6",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "APITestDesign-l00617778#10",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "devspore-cic_30036124#21",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "devspore-cic_30036124#22",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "nacos_f00563108#25",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "octopusscheduler_f00563108#27",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "SnapEngineService_h00636345#28",
+      "status": "success",
+      "hunks_count": [
+        0,
+        0,
+        0
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "octopusscheduler_f00563108#31",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    },
+    {
+      "benchmark_id": "octopusscheduler_f00563108#32",
+      "status": "success",
+      "hunks_count": [
+        1,
+        1,
+        1
+      ],
+      "validation_issues": 0
+    }
+  ]
+}

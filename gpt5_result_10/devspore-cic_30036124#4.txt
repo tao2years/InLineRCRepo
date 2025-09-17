@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 40,
+    "end_line": 48,
+    "diff_content": "@@ -40,9 +40,0 @@\n- 40: public static boolean isBootstrapClassLoader(String className) {\n- 41:         try {\n- 42:             Class<?> langClass = Class.forName(className);\n- 43:             return langClass.getClassLoader() == null;\n- 44:         } catch (ClassNotFoundException e) {\n- 45:             log.error(\"load error: {}\", e.getMessage());\n- 46:         }\n- 47:         return false;\n- 48:     }"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 50,
+    "end_line": 59,
+    "diff_content": "@@ -50,10 +50,0 @@\n- 50:     public static URL[] getExtensionClassLoaderUrls() {\n- 51:         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();\n- 52:         ClassLoader extensionClassLoader = systemClassLoader.getParent();\n- 53: \n- 54:         if (extensionClassLoader instanceof URLClassLoader) {\n- 55:             URLClassLoader urlClassLoader = (URLClassLoader) extensionClassLoader;\n- 56:             return urlClassLoader.getURLs();\n- 57:         }\n- 58:         return null;\n- 59:     }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,0 @@\n-  1: @Slf4j"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：当时还没有 `isBootstrapClassLoader(...)` 辅助方法（40–48 行）。后来为了实现应用类加载器方案，需要先确认/区分引导类加载场景，于是补充了这个方法——这是为目标实现铺路的第一步。
+* **RC-2（中间）**：当时也还没有扩展类加载器 URL 查询方法（50–59 行）。随后加入该方法，便于在实现应用类加载器逻辑前调试/核验类路径来源。
+* **RC-1（最近）**：在真正实现 `loadClassWithApplicationLoader(...)` 之前，引入日志注解 `@Slf4j`（倒推视角显示为此步之前尚未添加）。有了统一日志能力，目标实现中的 info/error 日志才能顺利落地。

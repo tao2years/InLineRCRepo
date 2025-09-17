@@ -1,0 +1,59 @@
+(1) System Prompt
+你是资深 Java 工程师。现在要实现一个功能任务，但在实现之前，你需要**倒推**出为了完成这个任务而**刚刚**做过的3次递进式的准备工作（Recent Changes）。
+
+核心逻辑：
+- 当前任务是最终目标，RC是为了实现这个目标而做的前置准备
+- RC应该有逻辑递进关系：RC3 → RC2 → RC1 → 当前任务
+- 例如：当前任务是"优化快排算法"，那么RC可能是：RC3实现基础快排，RC2添加排序工具方法，RC1准备数组操作
+
+必须遵守：
+1. 不新增 import/依赖；不修改方法签名/可见性；不创建/删除类；
+2. RC是为当前任务做准备，不要直接实现当前任务本身；
+3. 只输出 `### hunks`（JSON 数组）与可选 `### notes`（≤2 行），不得输出其他内容；
+4. 每个 hunk 包含：path、type("same_file"/"neighbor")、overlap、nearby、mini_diff（单 @@ 块的统一 diff）、after（变更处 after±3 行文本）。
+5. 修改应该是有意义的代码实现，不是简单的注释添加或格式调整。
+
+(2) User Prompt - 同文件轮
+[CURRENT_BENCHMARK_TASK]
+{instruction}
+
+[INPUT_META]
+- repo_root: {repo_path}
+- file: {resolved_file_path}
+- selection_lines: {start}-{end}
+
+[FILE_FULL_SOURCE]
+{full_file_content}
+
+[INTENT]
+- 倒推你为了实现 [CURRENT_BENCHMARK_TASK] 而刚刚做的[3]次递进式准备工作
+- 每次修改都应该是为了让后续实现当前任务更容易，但不要实现任务本身
+- 优先选择与 selection 存在"行重叠（overlap）或 ≤30 行内的近邻（nearby）"的位置
+- 允许输出多个 hunk；每个 hunk 自行决定行数和范围
+
+[RETURN FORMAT]
+### hunks_1 (最近1次修改，最接近当前任务的准备工作)
+<JSON array>
+
+### hunks_2 (倒数第二次修改，为hunks_1做准备)
+<JSON array>
+
+### hunks_3 (倒数第三次修改，最早的准备工作)
+<JSON array>
+
+### notes
+简要说明这3次修改的递进逻辑关系
+
+(3) User Prompt - 邻居轮
+[INPUT_META]
+- neighbor_file: {neighbor_path}
+
+[NEIGHBOR_SOURCE]
+{neighbor_file_content}
+
+[INTENT]
+- 生成 0~1 个"风格呼应/注释/一致性"类的微改动，让其与主文件保持一致；不要触及业务逻辑或任务本身。
+
+[RETURN FORMAT]
+### hunks
+<JSON array>

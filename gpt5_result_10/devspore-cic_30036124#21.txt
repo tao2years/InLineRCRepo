@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,0 @@\n-  1: @Slf4j"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 50,
+    "end_line": 59,
+    "diff_content": "@@ -50,10 +50,0 @@\n- 50:     public static URL[] getExtensionClassLoaderUrls() {\n- 51:         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();\n- 52:         ClassLoader extensionClassLoader = systemClassLoader.getParent();\n- 53: \n- 54:         if (extensionClassLoader instanceof URLClassLoader) {\n- 55:             URLClassLoader urlClassLoader = (URLClassLoader) extensionClassLoader;\n- 56:             return urlClassLoader.getURLs();\n- 57:         }\n- 58:         return null;\n- 59:     }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ClassLoaderUtils.java",
+    "start_line": 30,
+    "end_line": 40,
+    "diff_content": "@@ -30,11 +30,0 @@\n- 30:     public static void loadClassWithApplicationLoader(String className) {\n- 31:         try {\n- 32:             ClassLoader appClassLoader = ClassLoader.getSystemClassLoader();\n- 33:             log.info(\"Application ClassLoader: {}\", appClassLoader);\n- 34: \n- 35:             Class<?> loadedClass = appClassLoader.loadClass(className);\n- 36:             log.info(\"Loaded Class: {}\", loadedClass.getName());\n- 37:         } catch (ClassNotFoundException e) {\n- 38:             log.error(\"load error: {}\", e.getMessage());\n- 39:         }\n- 40:     }"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：当时项目尚未引入日志注解 `@Slf4j`（第 1 行）。后续为实现目标方法中的 `log.info/error` 日志，需要先具备统一日志能力。
+* **RC-2（中间）**：当时还没有扩展类加载器 URL 查询工具方法（50–59 行）。后来新增该方法以便在实现类加载相关功能前进行类路径诊断与辅助验证。
+* **RC-1（最近）**：在真正完成 `isBootstrapClassLoader(...)` 目标实现之前，`loadClassWithApplicationLoader(...)`（30–40 行）尚未加入。随后引入该方法，作为与应用类加载器交互的配套能力，有助于与引导类加载器场景相区分。

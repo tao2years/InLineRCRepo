@@ -1,0 +1,57 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "RedisDynamicGlobalVariableService.java",
+    "start_line": 13,
+    "end_line": 13,
+    "diff_content": "@@ -13,1 +13,0 @@\n- 13:     private String keyPrefix = \"APITestExecuteDaemonService::dynamic-global-variable::\";"
+  },
+  {
+    "file_path": "RedisDynamicGlobalVariableService.java",
+    "start_line": 64,
+    "end_line": 66,
+    "diff_content": "@@ -64,3 +64,3 @@\n   64:     private String prefix(String taskId) {\n- 65:         return keyPrefix + taskId;\n+ 65:         return taskId;\n   66:     }"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "RedisDynamicGlobalVariableService.java",
+    "start_line": 19,
+    "end_line": 26,
+    "diff_content": "@@ -19,8 +19,4 @@\n   19:     public void put(String taskId, String key, String value) {\n- 20:         BoundHashOperations<String, String, String> boundHashOperations = redisTemplate.boundHashOps(prefix(taskId));\n- 21:         if (boundHashOperations.get(key) == null && boundHashOperations.size() >= amountLimitPerTask) {\n- 22:             throwLimitExceedException(amountLimitPerTask);\n- 23:         }\n- 24:         boundHashOperations.put(key, value);\n- 25:         boundHashOperations.expire(Duration.ofSeconds(ttlSeconds));\n+ 20:         redisTemplate.opsForHash().put(prefix(taskId), key, value);\n+ 21:         // TODO: consider TTL; will migrate to bound ops later\n   26:     }"
+  },
+  {
+    "file_path": "RedisDynamicGlobalVariableService.java",
+    "start_line": 29,
+    "end_line": 35,
+    "diff_content": "@@ -29,7 +29,7 @@\n   29:     public long remove(String taskId, String key) {\n- 30:         Long ret = redisTemplate.boundHashOps(prefix(taskId)).delete(key);\n+ 30:         Long ret = redisTemplate.opsForHash().delete(prefix(taskId), key);\n   31:         if (ret == null) {\n   32:             return 0;\n   33:         }\n   34:         return ret;\n   35:     }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "RedisDynamicGlobalVariableService.java",
+    "start_line": 19,
+    "end_line": 26,
+    "diff_content": "@@ -19,8 +19,5 @@\n   19:     public void put(String taskId, String key, String value) {\n   20:         BoundHashOperations<String, String, String> boundHashOperations = redisTemplate.boundHashOps(prefix(taskId));\n- 21:         if (boundHashOperations.get(key) == null && boundHashOperations.size() >= amountLimitPerTask) {\n- 22:             throwLimitExceedException(amountLimitPerTask);\n- 23:         }\n+ 21:         // TODO: add per-task limit check in a follow-up change\n   24:         boundHashOperations.put(key, value);\n   25:         boundHashOperations.expire(Duration.ofSeconds(ttlSeconds));\n   26:     }"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：系统还未引入统一前缀字段，`prefix(taskId)` 直接返回 `taskId`，也没有 `keyPrefix` 成员。这为后续逐步规范键命名留出空间（从“裸 taskId”开始）。
+* **RC-2（中间）**：读写仍使用 `opsForHash` 的直呼形式，未切换到 `boundHashOps`；`put` 只完成基本写入，并标注将来迁移 TTL 的 TODO；`remove` 也用 `opsForHash().delete(...)`。这是向最终统一的 bound 语义过渡前的一步。
+* **RC-1（最近）**：`put` 已迁移到 `boundHashOps` 并设置过期，但尚未加入**每任务上限**校验，留下 TODO 作为最后的准备。
+* **最终版本**：在禁止修改的 `get` 已完成实现的前提下，其它位置完成了从 `opsForHash` → `boundHashOps`，补齐了限流检查与 key 前缀规范等，形成与 `get` 一致的读写模型。

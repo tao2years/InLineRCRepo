@@ -1,0 +1,45 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "AsyncService.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,0 @@\n-  1: @Async"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "AsyncService.java",
+    "start_line": 47,
+    "end_line": 47,
+    "diff_content": "@@ -44,4 +44,11 @@\n   44:         LOGGER.warn(\"text attack detect failed, phase:{}, connectionId:{}, userId:{}, traceId:{}\", phase, sessionId,\n   45:             userId, traceId);\n-  47:         interceptAttack(sessionId, phase, userRiskRecord);\n+  47:         if (!engineProperties.isSensitiveCheckAicsInterceptEnable()) {\n+  48:             LOGGER.info(\"aics intercept is not enable, skip forbidden user and close connection\");\n+  49:             return;\n+  50:         }\n+  51:         riskManageService.autoForbiddenUserAsync(userRiskRecord);\n+  52:         LOGGER.warn(\"start to close connection, phase:{}, connectionId:{}, userId:{}, traceId:{}\", phase, sessionId,\n+  53:             userRiskRecord.getUserId(), userRiskRecord.getTraceId());\n+  54:         sseServer.closeWithError(sessionId, new NotSafePromptException(ErrorCode.NOT_SAFE_PROMPT_ERROR));\n+  55:         LOGGER.warn(\"end to close connection, phase:{}, connectionId: {}, userId:{}, traceId:{}\", phase, sessionId,\n+  56:             userRiskRecord.getUserId(), userRiskRecord.getTraceId());\n   48:     }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "AsyncService.java",
+    "start_line": 46,
+    "end_line": 46,
+    "diff_content": "@@ -43,6 +43,12 @@\n   43:         }\n   44:         LOGGER.warn(\"text attack detect failed, phase:{}, connectionId:{}, userId:{}, traceId:{}\", phase, sessionId,\n   45:             userId, traceId);\n-  46:         checkResultAndRecordAsync(result);\n+  46:         {\n+  47:             UserRiskRecord tmp = new UserRiskRecord();\n+  48:             tmp.setRiskInfo(result.getMatchWord());\n+  49:             tmp.setRiskType(result.getMatchType());\n+  50:             tmp.setRiskScore(result.getRiskScore());\n+  51:             riskManageService.addUserRiskRecord(tmp);\n+  52:         }\n   47:         interceptAttack(sessionId, phase, userRiskRecord);\n   48:     }"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：尚未将整个类标注为 `@Async`（第 1 行缺失）。这时异步能力只可能依赖显式线程或后续的 `CompletableFuture`，为演进到异步记录打下“可独立于注解”的基础。
+* **RC-2（中间）**：在真正抽出拦截逻辑方法之前，`attackCheck` 内联了拦截与关闭连接的逻辑（替换第 47 行），随后才重构为 `interceptAttack(...)` 辅助方法（最终版）。
+* **RC-1（最近）**：在引入专用的 `checkResultAndRecordAsync(...)` 之前，仍然是**同步**地构造并保存 `UserRiskRecord`（替换第 46 行）。最终版本将其替换为基于 `CompletableFuture` 的异步记录，而该异步实现所在的 49–57 行区域被标注为**禁止修改**，本次倒推未触碰。
+

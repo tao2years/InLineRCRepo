@@ -1,0 +1,62 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 11,
+    "end_line": 11,
+    "diff_content": "@@ -11,1 +11,0 @@\n- 11:     public static final String REDIS_MODE_CLUSTER = \"cluster\";"
+  },
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 59,
+    "end_line": 62,
+    "diff_content": "@@ -59,4 +59,0 @@\n- 59:             case REDIS_MODE_CLUSTER -> {\n- 60:                 RedisClusterConfiguration clusterConfiguration = createClusterConfiguration(redisConfig);\n- 61:                 return new JedisConnectionFactory(clusterConfiguration, clientConfiguration);\n- 62:             }"
+  },
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 90,
+    "end_line": 100,
+    "diff_content": "@@ -90,11 +90,0 @@\n- 90:     private static RedisClusterConfiguration createClusterConfiguration(JinCacheRedisConfiguration redisConfig) {\n- 91:         RedisClusterConfiguration configuration = new RedisClusterConfiguration();\n- 92:         List<RedisNode> redisNodes = Arrays.stream(redisConfig.getHosts().split(\",\")).map(host -> {\n- 93:             String[] items = host.split(\":\");\n- 94:             return new RedisNode(items[0], Integer.parseInt(items[1]));\n- 95:         }).collect(Collectors.toList());\n- 96:         configuration.setMaxRedirects(redisConfig.getMaxRedirects());\n- 97:         configuration.setClusterNodes(redisNodes);\n- 98:         configuration.setPassword(redisConfig.getPassword());\n- 99:         return configuration;\n-100:     }"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 16,
+    "end_line": 16,
+    "diff_content": "@@ -16,1 +16,0 @@\n- 16:     public static final String REDIS_MODE_SENTINEL = \"sentinel\";"
+  },
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 102,
+    "end_line": 108,
+    "diff_content": "@@ -102,7 +102,0 @@\n-102:     private static RedisSentinelConfiguration createSentinelConfiguration(JinCacheRedisConfiguration redisConfig) {\n-103:         Set<String> sentinelHostAndPorts = Arrays.stream(redisConfig.getHosts().split(\",\")).collect(Collectors.toSet());\n-104:         RedisSentinelConfiguration configuration =\n-105:             new RedisSentinelConfiguration(redisConfig.getMasterName(), sentinelHostAndPorts);\n-106:         configuration.setPassword(redisConfig.getPassword());\n-107:         return configuration;\n-108:     }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "RedisConnectFactoryBuilder.java",
+    "start_line": 63,
+    "end_line": 66,
+    "diff_content": "@@ -63,4 +63,0 @@\n- 63:             case REDIS_MODE_SENTINEL -> {\n- 64:                 RedisSentinelConfiguration sentinelConfiguration = createSentinelConfiguration(redisConfig);\n- 65:                 return new JedisConnectionFactory(sentinelConfiguration, clientConfiguration);\n- 66:             }"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：当时仅支持 **standalone**，尚未引入 **cluster**。因此删除了 `REDIS_MODE_CLUSTER` 常量（11 行）、`buildJedisConnectFactory` 中的 cluster 分支（59–62 行）以及相应的 `createClusterConfiguration(...)` 帮助方法（90–100 行）。
+* **RC-2（中间）**：随后准备引入 **sentinel** 之前的阶段，代码中还没有 sentinel 的枚举常量与配置构造器。对应地移除了 `REDIS_MODE_SENTINEL` 常量（16 行）以及 `createSentinelConfiguration(...)` 方法（102–108 行）。
+* **RC-1（最近）**：紧贴最终实现之前的一步，`buildJedisConnectFactory` 里 **尚未**加入 sentinel 分支（63–66 行）。最后一步才补全该分支，与最终版本对齐。

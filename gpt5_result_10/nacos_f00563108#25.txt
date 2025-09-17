@@ -1,0 +1,56 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "NacosSignatureAlgorithm.java",
+    "start_line": 19,
+    "end_line": 19,
+    "diff_content": "@@ -19,1 +19,0 @@\n- 19:     private static final String HS512_JWT_HEADER = \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9\";"
+  },
+  {
+    "file_path": "NacosSignatureAlgorithm.java",
+    "start_line": 33,
+    "end_line": 34,
+    "diff_content": "@@ -33,2 +33,2 @@\n  33:     public static final NacosSignatureAlgorithm HS512 = new NacosSignatureAlgorithm(\"HS512\", \"HmacSHA512\",\n- 34:             HS512_JWT_HEADER);\n+ 34:             HS512_JWT_HEADER_OLD);"
+  },
+  {
+    "file_path": "NacosSignatureAlgorithm.java",
+    "start_line": 45,
+    "end_line": 50,
+    "diff_content": "@@ -45,6 +45,5 @@\n  45:     static {\n  46:         MAP.put(HS256_JWT_HEADER, HS256);\n  47:         MAP.put(HS384_JWT_HEADER, HS384);\n- 48:         MAP.put(HS512_JWT_HEADER, HS512);\n  49:         MAP.put(HS512_JWT_HEADER_OLD, HS512_OLD);\n  50:     }"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "NacosSignatureAlgorithm.java",
+    "start_line": 21,
+    "end_line": 21,
+    "diff_content": "@@ -21,1 +21,1 @@\n- 21:     private static final Base64.Encoder URL_BASE64_ENCODER = Base64.getUrlEncoder().withoutPadding();\n+ 21:     private static final Base64.Encoder URL_BASE64_ENCODER = Base64.getUrlEncoder();"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "NacosSignatureAlgorithm.java",
+    "start_line": 175,
+    "end_line": 179,
+    "diff_content": "@@ -175,5 +175,5 @@\n 175:     private Mac getMacInstance(Key key) {\n 176:         try {\n-177:             Mac instance = Mac.getInstance(jcaName);\n+177:             Mac instance = Mac.getInstance(algorithm);\n 178:             instance.init(key);\n 179:             return instance;"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：系统尚未采用带 `typ` 的 **新 HS512 头**，`HS512` 使用的是 `HS512_JWT_HEADER_OLD`，静态映射中也没有新头的映射条目。这样可以先保证历史 token 兼容，后续再引入新头部以对齐规范。
+* **RC-2（中间）**：URL Base64 编码器仍为默认 `getUrlEncoder()`（可能产生填充），为最终签名稳定性铺路；之后再切换为 `withoutPadding()` 与最终实现一致，避免 `.` 分隔干扰。
+* **RC-1（最近）**：`getMacInstance` 仍通过逻辑算法名 `algorithm` 获取 `Mac` 实例；最终版本收敛到 `jcaName`，与 JCA 标准名称完全一致，减少实现/配置歧义。

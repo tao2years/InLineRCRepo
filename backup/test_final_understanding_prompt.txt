@@ -1,0 +1,151 @@
+=== SYSTEM PROMPT ===
+你是资深 Java 工程师。现在给你一个完整的代码文件（最终状态），你需要**倒推**出为了达到这个最终状态而**刚刚**做过的3次递进式代码修改（Recent Changes）。
+
+核心逻辑：
+- 给出的代码是最终完整状态
+- 你需要倒推出3个历史版本的修改过程
+- 演进路径：初始版本 → RC3 → RC2 → RC1 → 当前最终版本
+- 每次RC都应该是有意义的代码演进，体现真实的开发过程
+
+重要原则：
+1. 不新增 import/依赖；不修改方法签名/可见性；不创建/删除类；
+2. 每个RC都应该是向当前最终状态演进的一步；
+3. diff必须包含真实的删除(-)和新增(+)操作，体现代码的实际变化；
+4. 每个 hunk 包含：path、type("same_file"/"neighbor")、overlap、nearby、mini_diff（单 @@ 块的统一 diff）、after（变更处 after±3 行文本）。
+5. 从当前最终代码状态倒推，确保每一步都是合理的演进。
+
+=== USER PROMPT ===
+[TASK_DESCRIPTION]
+开发任务：使用系统的Application ClassLoader来加载一个指定的类
+
+[FINAL_CODE_STATE]
+以下是当前的最终代码状态（完整文件）：
+@Slf4j
+public class ClassLoaderUtils {
+    private ClassLoaderUtils() {
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public static URL[] getURLs(ClassLoader classLoader) {
+        if (classLoader instanceof URLClassLoader) {
+            return ((URLClassLoader) classLoader).getURLs();
+        }
+        try {
+            Field ucpField = classLoader.getClass().getDeclaredField("ucp");
+            AccessController.doPrivileged((PrivilegedAction) () -> {
+                ucpField.setAccessible(true);
+                return null;
+            });
+            Object ucp = ucpField.get(classLoader);
+            Field pathField = ucp.getClass().getDeclaredField("path");
+            AccessController.doPrivileged((PrivilegedAction) () -> {
+                pathField.setAccessible(true);
+                return null;
+            });
+            ArrayList<URL> path = (ArrayList<URL>) pathField.get(ucp);
+            return path.toArray(new URL[0]);
+        } catch (Exception e) {
+            throw new DevsporeCicException(e);
+        }
+    }
+public static boolean isBootstrapClassLoader(String className) {
+        try {
+            Class<?> langClass = Class.forName(className);
+            return langClass.getClassLoader() == null;
+        } catch (ClassNotFoundException e) {
+            log.error("load error: {}", e.getMessage());
+        }
+        return false;
+    }
+
+    public static URL[] getExtensionClassLoaderUrls() {
+        ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+        ClassLoader extensionClassLoader = systemClassLoader.getParent();
+
+        if (extensionClassLoader instanceof URLClassLoader) {
+            URLClassLoader urlClassLoader = (URLClassLoader) extensionClassLoader;
+            return urlClassLoader.getURLs();
+        }
+        return null;
+    }
+
+    /**
+     * 动态加载类并执行指定方法
+     *
+     * @param loader 类加载器
+     * @param className 完整类名（如 "com.example.Plugin"）
+     * @param methodName 方法名（如 "run"）
+     * @param parameterTypes 方法参数类型数组（无参数传 null）
+     * @param args 方法参数值数组（无参数传 null）
+     * @return 方法执行结果（无返回值方法返回 null）
+     * @throws Exception 封装所有可能的反射异常
+     */
+    public static <T> T loadAndInvoke(ClassLoader loader, String className, String methodName,
+        Class<?>[] parameterTypes, Object[] args, Class<T> returnType) throws Exception {
+
+        // 1. 加载目标类
+        Class<?> clazz = loader.loadClass(className);
+
+        // 2. 实例化对象（使用无参构造函数）
+        Constructor<?> constructor = clazz.getDeclaredConstructor();
+        constructor.setAccessible(true); // 允许调用私有构造方法
+        Object instance = constructor.newInstance();
+
+        // 3. 获取并执行方法
+        Method method = clazz.getMethod(methodName, parameterTypes);
+
+        // 判断是否为静态方法
+        if (Modifier.isStatic(method.getModifiers())) {
+            return returnType.cast(method.invoke(null, args));// 静态方法无需实例
+        } else {
+            // 非静态方法
+            return returnType.cast(method.invoke(instance, args));
+        }
+    }
+
+    /**
+     * 重载方法：简化无参方法的调用
+     */
+    public static <T> T loadAndInvoke(ClassLoader loader, String className, String methodName, Class<T> returnType)
+        throws Exception {
+        Object result = loadAndInvoke(loader, className, methodName, null, null, returnType);
+        return returnType.cast(result);
+    }
+
+public static void loadClassWithApplicationLoader(String className) {
+        try {
+            ClassLoader appClassLoader = ClassLoader.getSystemClassLoader();
+            log.info("Application ClassLoader: {}", appClassLoader);
+
+            Class<?> loadedClass = appClassLoader.loadClass(className);
+            log.info("Loaded Class: {}", loadedClass.getName());
+        } catch (ClassNotFoundException e) {
+            log.error("load error: {}", e.getMessage());
+        }
+    }```
+}
+
+[INTENT]
+请倒推出为了达到上述最终代码状态，开发者刚刚做过的3次递进式代码修改：
+- hunks_3: 倒数第三次修改（最早的修改，奠定基础）
+- hunks_2: 倒数第二次修改（中间演进）
+- hunks_1: 最近一次修改（最接近当前状态，完善细节）
+
+每次修改都应该：
+1. 体现真实的代码演进逻辑
+2. 包含合理的增删改操作（不只是添加）
+3. 逐步向当前最终状态靠近
+4. 符合开发者的实际工作流程
+
+[RETURN FORMAT]
+### hunks_3 (倒数第三次修改，最早的修改)
+<JSON array>
+
+### hunks_2 (倒数第二次修改)
+<JSON array>
+
+### hunks_1 (最近一次修改，最接近当前状态)
+<JSON array>
+
+### notes
+简要说明这3次修改的演进逻辑，解释如何从初始状态逐步达到当前最终状态

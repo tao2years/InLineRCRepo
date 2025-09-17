@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "TableShardInterceptor.java",
+    "start_line": 1,
+    "end_line": 6,
+    "diff_content": "@@ -1,6 +1,0 @@\n-  1: @Intercepts({\n-  2:     @Signature(\n-  3:             type = StatementHandler.class,\n-  4:             method = \"prepare\",\n-  5:             args = {Connection.class, Integer.class})\n-  6: })"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "TableShardInterceptor.java",
+    "start_line": 12,
+    "end_line": 12,
+    "diff_content": "@@ -12,1 +12,0 @@\n- 12:     private static final ReflectorFactory DEFAULT_REFLECTOR_FACTORY = new DefaultReflectorFactory();"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "TableShardInterceptor.java",
+    "start_line": 35,
+    "end_line": 42,
+    "diff_content": "@@ -35,8 +35,0 @@\n- 35: @Override\n- 36:     public Object plugin(final Object target) {\n- 37:         if (target instanceof StatementHandler) {\n- 38:             return Plugin.wrap(target, this);\n- 39:         } else {\n- 40:             return target;\n- 41:         }\n- 42:     }"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：当时尚未添加 MyBatis 的 `@Intercepts/@Signature` 注解组（1–6 行）；这一步的后续引入为拦截 `prepare` 方法打好了“接入点”。
+* **RC-2（中间）**：随后引入了 `DEFAULT_REFLECTOR_FACTORY` 常量（12 行）。在倒推视角里这一步之前尚未存在；增加该常量使得后续的 `MetaObject.forObject(..., DEFAULT_REFLECTOR_FACTORY)`（仍在禁止区）具备可读的集中定义。
+* **RC-1（最近）**：在最终实现前一刻，`plugin(..)` 包装逻辑（35–42 行）尚未加入；最后一步补全它以确保只针对 `StatementHandler` 生效并返回代理。

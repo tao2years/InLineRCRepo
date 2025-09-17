@@ -1,0 +1,45 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ListElemtIsStringTypeHandler.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<List<String>> {\n+  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<Object> {"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ListElemtIsStringTypeHandler.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<List<String>> {\n+  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<List<?>> {"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ListElemtIsStringTypeHandler.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<List<?>> {\n+  1: public class ListElemtIsStringTypeHandler extends ListTypeHandler<List<String>> {"
+  }
+]
+```
+
+### notes
+
+* **RC-3（最早）**：类最初仅继承 `ListTypeHandler<Object>`（未绑定泛型），尚未聚焦到“列表元素为字符串”的场景——这是最粗粒度的占位形态。
+* **RC-2（中间）**：将父类泛型细化到 `List<?>`，表明处理“某种元素类型的列表”，为最终与 `TypeToken<List<String>>` 对齐做过渡。
+* **RC-1（最近）**：把父类泛型从通配符进一步收敛到 `List<String>`，与目标实现中 `TypeToken<List<String>>` 的返回类型语义完全一致。
+

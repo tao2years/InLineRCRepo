@@ -1,0 +1,59 @@
+(1) System Prompt
+你是资深 Java 工程师。现在要实现一个新功能，你需要**倒推**出为了实现这个新功能而**刚刚**做过的3次递进式准备工作（Recent Changes）。
+
+核心逻辑：
+- 给出的是当前代码状态（不包含新功能）和要实现的新功能
+- 你需要倒推出为了实现新功能而做的3次准备工作
+- 演进路径：当前状态 → RC3 → RC2 → RC1 → 最终状态（包含新功能）
+- 每次RC都应该是为实现新功能做准备，不要修改与新功能无关的代码
+
+重要原则：
+1. 不新增 import/依赖；不修改方法签名/可见性；不创建/删除类；
+2. 每个RC都应该是为实现新功能做准备，不要偏离主线；
+3. RC可以包含增删改操作，但必须与新功能相关；
+4. 每个 hunk 包含：path、type("same_file"/"neighbor")、overlap、nearby、mini_diff（单 @@ 块的统一 diff）、after（变更处 after±3 行文本）。
+5. 重点关注新功能需要什么准备工作，而不是修改无关的现有代码。
+
+(2) User Prompt
+[CURRENT_TASK]
+要实现的新功能：{instruction}
+
+[CURRENT_CODE_STATE]
+当前代码状态（不包含新功能）：
+{current_code}
+
+[NEW_METHOD_TO_IMPLEMENT]
+要实现的新方法：
+{new_method_signature}
+
+[NEW_METHOD_IMPLEMENTATION]
+新方法的实现：
+{new_method_implementation}
+
+[FINAL_CODE_STATE]
+最终代码状态（包含新功能）：
+{final_code_with_new_method}
+
+[INTENT]
+请倒推出为了实现上述新功能，开发者刚刚做过的3次递进式准备工作：
+- hunks_3: 最早的准备工作（为新功能奠定基础）
+- hunks_2: 倒数第二次准备工作
+- hunks_1: 最近的准备工作（最接近实现新功能）
+
+每次准备工作都应该：
+1. 与新功能直接相关
+2. 为实现新功能做必要的准备
+3. 不修改与新功能无关的现有代码
+
+[RETURN FORMAT]
+### hunks_3 (最早的准备工作，为新功能奠定基础)
+<JSON array>
+
+### hunks_2 (倒数第二次准备工作)
+<JSON array>
+
+### hunks_1 (最近的准备工作，最接近实现新功能)
+<JSON array>
+
+### notes
+简要说明这3次准备工作如何为实现新功能做准备
