@@ -1,0 +1,45 @@
+A user is developing a new feature. Based on the known code information, help him implement this new feature.
+
+Below are some information from external classes imported by current file:
+```java
+{external_imports}
+```
+
+The context above is:
+```java
+{context_above_with_line_numbers}
+```
+
+The context below is:
+```java
+{context_below_with_line_numbers}
+```
+
+## Recent Changes Context
+Here are some recent changes that were made to this file to help you understand the development context:
+
+### Recent Change 3 (Earliest preparation work)
+```diff
+{rc_3_diff}
+```
+
+### Recent Change 2 (Intermediate preparation)
+```diff
+{rc_2_diff}
+```
+
+### Recent Change 1 (Latest preparation work)
+```diff
+{rc_1_diff}
+```
+
+These recent changes show the development progression leading up to the current task.
+
+The new feature is {user_edit_instruction}.
+
+And here is the code snippet you are asked to modify:
+```java
+{selected_code_snippet}
+```
+
+Please analyze the mission carefully and thoroughly first, and then give a definitely runnable code. You should put your code between ```java and ```.

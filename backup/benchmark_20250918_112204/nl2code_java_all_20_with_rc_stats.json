@@ -1,0 +1,10 @@
+{
+  "total_entries": 20,
+  "success_rate": "20/20",
+  "file_size_bytes": 136127,
+  "generation_time": "2024-12-19",
+  "rc_coverage": "100% (all from GPT-5 manual)",
+  "diff_direction": "Corrected (all RC are additions +)",
+  "line_numbers": "Perfect correspondence",
+  "note": "Filtered out 2 invalid summary entries"
+}
