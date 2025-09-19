@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 1,
+    "end_line": 4,
+    "diff_content": "@@ -1,2 +1,4 @@\n-// TODO: define resilience configuration class\n-public class ResilienceConfig {\n+@Configuration\n+public class ResilienceConfig {\n+\n+    // 信号量隔离策略配置\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 12,
+    "end_line": 21,
+    "diff_content": "@@ -12,1 +12,10 @@\n-// TODO: add ThreadPoolBulkhead bean\n+// 线程池隔离策略配置\n+    @Bean\n+    public ThreadPoolBulkheadRegistry threadPoolBulkheadRegistry() {\n+        ThreadPoolBulkheadConfig config = ThreadPoolBulkheadConfig.custom()\n+                .maxThreadPoolSize(20)           // 最大线程数\n+                .coreThreadPoolSize(5)          // 核心线程数\n+                .queueCapacity(50)              // 队列容量\n+                .build();\n+        return ThreadPoolBulkheadRegistry.of(config);\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 23,
+    "end_line": 30,
+    "diff_content": "@@ -23,1 +23,8 @@\n-// TODO: add TimeLimiterRegistry bean\n+    @Bean\n+    public TimeLimiterRegistry timeLimiterRegistry() {\n+        TimeLimiterConfig config = TimeLimiterConfig.custom()\n+                .timeoutDuration(Duration.ofSeconds(2))  // 全局默认超时时间\n+                .cancelRunningFuture(true)  // 超时后取消正在执行的 Future\n+                .build();\n+        return TimeLimiterRegistry.of(config);\n+    }\n"
+  }
+]
+```
+
+### notes
+
+* **RC3**：为配置类补齐 `@Configuration` 注解与类注释占位（1–4 行），建立 Spring 配置类身份与“信号量隔离”小节标题，给目标实现提供落点但不触碰 5–11 行的目标方法。
+* **RC2**：引入**线程池隔离**的 Bean（12–21 行），完善弹性治理的并发隔离版型，形成与信号量隔离并列的结构。
+* **RC1**：引入**TimeLimiter** 全局超时配置 Bean（23–30 行），补齐最终版本的第三块基础设施，使三种治理能力（信号量、线程池、超时）并存。整个过程均为**正向补丁**，且严格避开 `[禁止修改-目标实现]` 区域（5–11 行）。

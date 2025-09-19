@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "TokenDaoServiceImpl.java",
+    "start_line": 8,
+    "end_line": 9,
+    "diff_content": "@@ -8,2 +8,2 @@\n-    // TODO inject ServiceTokenInfoMapper\n-    // ServiceTokenInfoMapper serviceTokenInfoMapper;\n+    @Autowired\n+    ServiceTokenInfoMapper serviceTokenInfoMapper;\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "TokenDaoServiceImpl.java",
+    "start_line": 86,
+    "end_line": 92,
+    "diff_content": "@@ -86,7 +86,7 @@\n-        Iterable<ServiceTokenInfo> fullTokens = serviceTokenInfoMapper.selectList(null);\n-        Optional<ServiceTokenInfo> optionalServiceTokenInfo = StreamSupport.stream(fullTokens.spliterator(), false)\n-            .filter(e -> StringUtils.equalsIgnoreCase(e.getEncodeToken(), toFindToken))\n-            .findAny();\n-        return optionalServiceTokenInfo.map(ServiceTokenInfo::getEncodeToken).orElse(null);\n+        Iterable<ServiceTokenInfo> fullTokens = serviceTokenInfoMapper.selectList(null);\n+        Optional<ServiceTokenInfo> optionalServiceTokenInfo = StreamSupport.stream(fullTokens.spliterator(), true)\n+            .filter(\n+                e -> StringUtils.equalsIgnoreCase(cacheTokenService.getDecryptString(e.getEncodeToken()), toFindToken))\n+            .findAny();\n+        return optionalServiceTokenInfo.map(ServiceTokenInfo::getEncodeToken).orElse(null);\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "TokenDaoServiceImpl.java",
+    "start_line": 77,
+    "end_line": 83,
+    "diff_content": "@@ -77,7 +77,7 @@\n-        Iterable<ServiceTokenInfo> fullTokens = serviceTokenInfoMapper.selectList(null);\n-        Optional<ServiceTokenInfo> opServiceTokenInfo = StreamSupport.stream(fullTokens.spliterator(), false)\n-            .filter(e -> StringUtils.equalsIgnoreCase(toFindToken, e.getEncodeToken()))\n-            .findFirst();\n-        return opServiceTokenInfo.orElse(null);\n+        Iterable<ServiceTokenInfo> fullTokens = serviceTokenInfoMapper.selectList(null);\n+        Optional<ServiceTokenInfo> opServiceTokenInfo = StreamSupport.stream(fullTokens.spliterator(), true)\n+            .filter(\n+                e -> StringUtils.equalsIgnoreCase(toFindToken, cacheTokenService.getDecryptString(e.getEncodeToken())))\n+            .findFirst();\n+        return opServiceTokenInfo.orElse(null);\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基：数据访问依赖就绪）**：将 `serviceTokenInfoMapper` 的注入从占位注释替换为最终版的 `@Autowired` 字段（8–9 行），为分页查询方法能够调用 `selectPage` 做好最基础的数据访问准备。
+* **RC2（能力补齐：反查加密串的正确方式）**：把 `queryEncryToken` 的过滤逻辑改成“先解密再比较”（86–92 行），与最终版保持一致，为后续统一的查询/筛选语义打通路径。
+* **RC1（最后一米：按最终版的解密匹配查询 token）**：把 `queryToken` 的过滤逻辑替换为“入参明文 vs. 解密后的存储值”的比较（77–83 行），确保全类查询语义一致、与分页查询使用的实体/字段保持一致性。
+
+以上三步均为**正向演进补丁**；所有 `+` 行逐字匹配提供的最终代码行，且**未触碰** 62–70 行的**禁止修改区域**（`queryAllService` 目标实现）。

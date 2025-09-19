@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 1,
+    "end_line": 4,
+    "diff_content": "@@ -1,4 +1,4 @@\n-public class ResilienceConfig {\n-\n-\n-\n+@Configuration\n+public class ResilienceConfig {\n+\n+    // 信号量隔离策略配置\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 23,
+    "end_line": 30,
+    "diff_content": "@@ -23,1 +23,8 @@\n-// TODO: add TimeLimiterRegistry bean\n+@Bean\n+public TimeLimiterRegistry timeLimiterRegistry() {\n+    TimeLimiterConfig config = TimeLimiterConfig.custom()\n+            .timeoutDuration(Duration.ofSeconds(2))  // 全局默认超时时间\n+            .cancelRunningFuture(true)  // 超时后取消正在执行的 Future\n+            .build();\n+    return TimeLimiterRegistry.of(config);\n+}\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ResilienceConfig.java",
+    "start_line": 5,
+    "end_line": 12,
+    "diff_content": "@@ -5,1 +5,8 @@\n-// TODO: add BulkheadRegistry bean\n+@Bean\n+public BulkheadRegistry bulkheadRegistry() {\n+    BulkheadConfig config = BulkheadConfig.custom()\n+            .maxConcurrentCalls(10)          // 最大并发数\n+            .maxWaitDuration(Duration.ofMillis(50)) // 等待时间\n+            .build();\n+    return BulkheadRegistry.of(config);\n+}\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（1–4 行）**：为配置类添加 `@Configuration` 注解，并补上类内“信号量隔离策略配置”的分节注释；确立 Spring 配置类身份与结构骨架，不触碰 15–22 行的目标实现方法。
+* **RC2（23–30 行）**：补齐 `TimeLimiterRegistry` Bean，完善超时治理能力，作为与线程池/信号量隔离并列的基础设施。
+* **RC1（5–12 行）**：最终补上 `BulkheadRegistry` Bean 的具体实现，与目标实现所在的**线程池隔离**方法形成互补，至此达到给定的最终代码形态。

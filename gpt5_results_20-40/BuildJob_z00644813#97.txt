@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 2,
+    "end_line": 4,
+    "diff_content": "@@ -2,3 +2,3 @@\n-    public static ExecutorService newFixedThreadPool(int nThreads) {\n-        return null;\n-    }\n+    public static ExecutorService newFixedThreadPool(int nThreads) {\n+        return Executors.newFixedThreadPool(nThreads);\n+    }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 6,
+    "end_line": 8,
+    "diff_content": "@@ -6,3 +6,3 @@\n-    public static ExecutorService newCachedThreadPool() {\n-        return null;\n-    }\n+    public static ExecutorService newCachedThreadPool() {\n+        return Executors.newCachedThreadPool();\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-public class ThreadPools {\n+public class ThreadPoolManager {\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基）**：实现固定线程池工厂方法的最终返回逻辑（2–4 行），从占位 `return null;` 升级为 `Executors.newFixedThreadPool(nThreads)`，确定统一采用 `Executors.*` 工厂风格。
+* **RC2（能力补齐）**：补齐缓存线程池工厂方法的返回值（6–8 行），与 RC3 保持一致的工厂范式，为类内线程池创建能力配齐。
+* **RC1（最后准备）**：将类名从占位名统一为最终的 `ThreadPoolManager`（第 1 行），对外 API 命名/职责对齐。
+
+三步均为**正向演进补丁**，所有 `+` 行逐字匹配最终代码（行号 1、2–4、6–8），并且**未触碰**被声明为禁止修改的目标方法 `public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize)`（该方法尚未出现在最终文件中，仅作为后续目标）。

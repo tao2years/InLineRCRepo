@@ -1,0 +1,45 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "SecurityGroupHelper.java",
+    "start_line": 56,
+    "end_line": 64,
+    "diff_content": "@@ -56,9 +56,9 @@\n-public List<PortGroupBinding> getPortByGroupId(String groupId) {\n-        // TODO implement\n-        return null;\n-    }\n+public List<PortGroupBinding> getPortByGroupId(String groupId) {\n+        QueryWrapper<PortGroupBinding> queryWrapper = new QueryWrapper<>();\n+        queryWrapper.lambda().eq(PortGroupBinding::getGroupId, groupId);\n+        List<PortGroupBinding> list = portGroupBindingMapper.selectList(queryWrapper);\n+        if (CollectionUtils.isEmpty(list)) {\n+            return null;\n+        }\n+        return list;\n+    }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "SecurityGroupHelper.java",
+    "start_line": 40,
+    "end_line": 47,
+    "diff_content": "@@ -40,8 +40,8 @@\n-public int deletePortGroupBindingByGroupId(String groupId) {\n-        if (StringUtil.isEmpty(groupId)) {\n-            throw new PmtsMgrException(\"group id cannot be empty\");\n-        }\n-        List<PortGroupBinding> list = getPortByGroupId(groupId);\n-        if (CollectionUtils.isEmpty(list)) { return 0; }\n-        AtomicInteger cnt = new AtomicInteger();\n-        list.forEach(e -> cnt.addAndGet(portGroupBindingMapper.deleteById(e.getId())));\n-        return cnt.get();\n-    }\n+public int deletePortGroupBindingByGroupId(String groupId) {\n+        if (StringUtil.isEmpty(groupId)) {\n+            throw new PmtsMgrException(\"group id cannot be empty\");\n+        }\n+        QueryWrapper<PortGroupBinding> queryWrapper = new QueryWrapper<>();\n+        queryWrapper.lambda().eq(PortGroupBinding::getGroupId, groupId);\n+        return portGroupBindingMapper.delete(queryWrapper);\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "SecurityGroupHelper.java",
+    "start_line": 13,
+    "end_line": 19,
+    "diff_content": "@@ -13,7 +13,7 @@\n-        return securityGroupMapper.selectOne(queryWrapper);\n+        Page<SecurityGroup> page = new Page<>(1, 1);\n+        IPage<SecurityGroup> securityGroupPage = securityGroupMapper.selectPage(page, queryWrapper);\n+        List<SecurityGroup> groups = securityGroupPage.getRecords();\n+        if (CollectionUtils.isEmpty(groups)) {\n+            return null;\n+        }\n+        return groups.get(0);\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基：查询辅助函数就绪）**：实现 `getPortByGroupId` 的最终版查询逻辑（56–64），为后续删除逻辑提供稳定的数据来源与查询范式（`QueryWrapper` + `lambda().eq(...)`）。
+* **RC2（能力补齐：删除策略归一）**：将 `deletePortGroupBindingByGroupId` 从“遍历按 id 逐条删除”的低效实现切换为“按 `groupId` 条件批量删除”的最终版写法（40–47），对齐目标实现所需的 `QueryWrapper` 风格与语义。
+* **RC1（最后准备：分页式单条获取范式）**：将 `getSecurityGroup` 从 `selectOne` 改为“分页查询取首条”的模式（13–19），统一本类对 `QueryWrapper` 的使用与空结果处理方式，使整体风格与目标实现一致。
+* 三步均为**正向演进补丁**，所有 `+` 行逐字匹配最终代码；且未触碰 48–55 行的**禁止修改区域**。

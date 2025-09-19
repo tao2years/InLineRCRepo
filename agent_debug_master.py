@@ -379,6 +379,13 @@ def main():
             result = master.run_basic_tracing_mode()
         elif args.mode == 'performance':
             result = master.run_performance_monitoring_mode()
+        elif args.mode == 'interaction':
+            result = master.run_interaction_testing_mode()
+        elif args.mode == 'comprehensive':
+            result = master.run_comprehensive_mode()
+        else:
+            print(f"❓ 未知模式: {args.mode}")
+            result = None
         
         # BREAKPOINT: 模式执行完成 - 观察结果处理
         print(f"\n🎉 调试模式 '{args.mode}' 执行完成!")

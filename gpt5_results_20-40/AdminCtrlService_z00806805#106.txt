@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "TResMsServiceImpl.java",
+    "start_line": 2,
+    "end_line": 6,
+    "diff_content": "@@ -2,5 +2,5 @@\n  public class TResMsServiceImpl implements TResMsService {\n-    // TODO add logger\n+    private static final Logger LOGGER = LogManager.getLogger(TResMsServiceImpl.class);\n \n-    // TODO table name\n+    private static final String TABLE_NAME = \"t_res_micro_service\";\n \n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "TResMsServiceImpl.java",
+    "start_line": 18,
+    "end_line": 27,
+    "diff_content": "@@ -18,10 +18,10 @@\n-        LOGGER.info(\"listService start\");\n-        IPage page = new Page(pageNum, pageSize);\n-        IPage<TResServiceResp> servicePage = tResMicroServiceMapper.getServiceList(page);\n-        LOGGER.info(\"listService end\");\n-        return CommonPage.restPage(servicePage);\n+        LOGGER.info(\"[begin listService][tableName={}]\", TABLE_NAME);\n+        IPage page = new Page(pageNum, pageSize);\n+        try {\n+            IPage<TResServiceResp> servicePage = tResMicroServiceMapper.getServiceList(page);\n+            LOGGER.info(\"[end listService][tableName={}]\", TABLE_NAME);\n+            return CommonPage.restPage(servicePage);\n+        } catch (DataAccessException e) {\n+            LOGGER.error(\"[listService from {} error][message = {}]\", TABLE_NAME, e.getMessage());\n+            throw ExceptionUtils.getSqlException(e, \"query service list from database error\");\n+        }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "TResMsServiceImpl.java",
+    "start_line": 46,
+    "end_line": 49,
+    "diff_content": "@@ -46,4 +46,4 @@\n-            LOGGER.error(\"delete error: {}\", e.getMessage());\n-            throw new VscServiceException(e);\n+            LOGGER.error(\"[deleteResMicroService data from {} error][uuid = {}, message = {}]\", TABLE_NAME, uuid,\n+                e.getMessage());\n+            throw ExceptionUtils.getSqlException(e, \"delete micro service data from database error\");\n         }\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基）**：在类体中引入 `LOGGER` 与 `TABLE_NAME` 常量（行 3、5），为后续统一日志规范与 SQL 错误信息模板提供基础，这两者在 `TARGET_IMPLEMENTATION` 中会被直接复用。
+* **RC2（能力补齐）**：将 `listService` 方法的日志与异常处理改为与最终版一致的规范（行 18–27），确立“begin/end + 表名 + 异常包装”的统一风格与工具调用路径（`ExceptionUtils.getSqlException`），为目标方法复用同一套模式做铺垫。
+* **RC1（最后一米）**：对 `delete` 的异常与日志落库格式进行统一（行 46–49），完成全类范围内与最终版一致的日志/异常风格闭环，使 `TARGET_IMPLEMENTATION` 引入后可与既有方法风格完全对齐而无需再改动受限区域。
+
+> 以上三步均为**正向补丁**，`+` 行与给定 Final 完全一致；所有改动**未触碰** 81–96 行的禁止修改区域。

@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "BaseLineServiceImpl.java",
+    "start_line": 171,
+    "end_line": 183,
+    "diff_content": "@@ -171,13 +171,13 @@\n-    private void getTableNames(Map<String, Object> paramMap) {\n-        // TODO fill table names\n-    }\n+    private void getTableNames(Map<String, Object> paramMap) {\n+        List<String> tableNames = new ArrayList<>();\n+        for (int i = 0; i < 10; i++) {\n+            tableNames.add(\"t_am_baseline_\" + i);\n+        }\n+        paramMap.put(\"tableName\", tableNames.get(0));\n+        if (tableNames.size() > 1) {\n+            String[] otherTables = new String[tableNames.size() - 1];\n+            for (int i = 1; i < tableNames.size(); i++) {\n+                otherTables[i - 1] = tableNames.get(i);\n+            }\n+            paramMap.put(\"otherTables\", otherTables);\n+        }\n     "
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "BaseLineServiceImpl.java",
+    "start_line": 158,
+    "end_line": 164,
+    "diff_content": "@@ -158,7 +158,7 @@\n-        // TODO: always scan all tables\n-        getTableNames(paramMap);\n+        if (StringUtil.isNotEmpty(requestBody.getLabelId())) {\n+            paramMap.put(\"labelId\", requestBody.getLabelId());\n+            String tableName = TaskUtil.getAlarmBaselineTableName(requestBody.getLabelId());\n+            paramMap.put(\"tableName\", tableName);\n+        } else {\n+            getTableNames(paramMap);\n+        }\n "
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "BaseLineServiceImpl.java",
+    "start_line": 134,
+    "end_line": 156,
+    "diff_content": "@@ -134,23 +134,23 @@\n-        // TODO basic filters only\n-        // return paramMap;\n+        if (StringUtil.isNotEmpty(requestBody.getScanTaskId())) {\n+            paramMap.put(\"scanTaskId\", requestBody.getScanTaskId());\n+        }\n+\n+        if (StringUtil.isNotEmpty(requestBody.getAnalyseUser())) {\n+            paramMap.put(\"analyseUser\", requestBody.getAnalyseUser());\n+        }\n+\n+        if (StringUtil.isNotEmpty(requestBody.getApproveUser())) {\n+            paramMap.put(\"approveUser\", requestBody.getApproveUser());\n+        }\n+\n+        if (requestBody.getAnalyseResult() != null) {\n+            paramMap.put(\"analyseResult\", requestBody.getAnalyseResult());\n+        }\n+\n+        if (StringUtil.isNotEmpty(requestBody.getSynchronizeTimeStart())) {\n+            paramMap.put(\"synchronizeTimeStart\", requestBody.getSynchronizeTimeStart());\n+        }\n+\n+        if (StringUtil.isNotEmpty(requestBody.getSynchronizeTimeEnd())) {\n+            paramMap.put(\"synchronizeTimeEnd\", requestBody.getSynchronizeTimeEnd());\n+        }\n "
+  }
+]
+```
+
+### notes
+
+* **RC3（地基：分表枚举能力）**：实现 `getTableNames` 的完整逻辑（171–183），让参数 `paramMap` 具备主表 `tableName` 与 `otherTables` 的填充能力，为未指定 `labelId` 时的全表分页查询打基础。
+* **RC2（能力补齐：分表选择分支）**：在 `getParamMap` 中补充 `labelId` 分支（158–164），当请求带有 `labelId` 时直接定位到对应分表；否则回退到 RC3 的全表枚举。该分支与目标实现中的 “`if (StringUtil.isNotEmpty(labelId)) { selectPageByLabelId } else { selectPageByMap }`” 完整对齐。
+* **RC1（最后准备：查询过滤维度）**：在 `getParamMap` 中补齐其余过滤项（134–156），包括 `scanTaskId/analyseUser/approveUser/analyseResult/synchronizeTimeStart/End`，使分页查询具备与目标实现配套的筛选维度。
+
+以上三步均为**正向补丁**，所有 `+` 行逐字匹配最终代码行内容与行号；仅改动辅助方法与参数构造逻辑，**未触碰** 17–34 行的禁止修改区域（`listBaseLine` 方法体）。

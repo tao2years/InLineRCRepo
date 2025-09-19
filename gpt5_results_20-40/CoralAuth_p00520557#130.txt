@@ -1,0 +1,44 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "IamAuthenticationFilter.java",
+    "start_line": 17,
+    "end_line": 31,
+    "diff_content": "@@ -17,15 +17,15 @@\n-    private static final String X_USER_PROFILE_HEADER = \"X-User-Profile\";\n-\n-    private static final String X_CONTEXT_ATTRIBUTES_HEADER = \"X-Context-Attributes\";\n-\n-    // TODO: only keep minimal headers for v3\n-    private static final String X_AUTH_TOKEN = \"Auth\";\n-    private static final String LOCALE = \"lang\";\n+    private static final String X_USER_PROFILE_HEADER = \"X-User-Profile\";\n+\n+    private static final String X_CONTEXT_ATTRIBUTES_HEADER = \"X-Context-Attributes\";\n+\n+    private static final String X_SECURITY_TOKEN_HEADER = \"X-Security-Token\";\n+\n+    private static final String X_SOURCE_ACCOUNT_HEADER = \"X-Source-Account\";\n+\n+    private static final String X_SOURCE_URN_HEADER = \"X-Source-Urn\";\n+\n+    private static final String X_REQUEST_PROOF = \"X-Request-Proof\";\n+\n+    private static final String X_AUTH_TOKEN = \"X-Auth-Token\";\n+\n+    private static final String LOCALE = \"locale\";\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "IamAuthenticationFilter.java",
+    "start_line": 103,
+    "end_line": 131,
+    "diff_content": "@@ -103,29 +103,29 @@\n-    private void updateDevcloudTokenStore(HttpServletRequest request) {\n-        // v3 仅初始化上下文与用户基本信息\n-        initRequestContext(request);\n-        userStore.setUserInfo(buildUserInfo());\n-    }\n-\n-    private void parseUserProfile(HttpServletRequest request) {\n-        // v3 场景不解析 X-User-Profile\n-    }\n+    private void updateDevcloudTokenStore(HttpServletRequest request) {\n+        parseUserProfile(request);\n+        DevCloudTokenStore.SECURITY_TOKEN.set(request.getHeader(X_SECURITY_TOKEN_HEADER));\n+        DevCloudTokenStore.SOURCE_ACCOUNT.set(request.getHeader(X_SOURCE_ACCOUNT_HEADER));\n+        DevCloudTokenStore.SOURCE_URN.set(request.getHeader(X_SOURCE_URN_HEADER));\n+        DevCloudTokenStore.X_USER_PROFILE.set(request.getHeader(X_USER_PROFILE_HEADER));\n+        DevCloudTokenStore.X_REQUEST_PROOF.set(request.getHeader(X_REQUEST_PROOF));\n+        DevCloudTokenStore.setToken(request.getHeader(X_AUTH_TOKEN));\n+        initRequestContext(request);\n+        ContextAttributesStore.update(request.getHeader(X_CONTEXT_ATTRIBUTES_HEADER));\n+        userStore.setUserInfo(buildUserInfo());\n+    }\n+\n+    private void parseUserProfile(HttpServletRequest request) {\n+        if (StringUtils.isEmpty(request.getHeader(X_USER_PROFILE_HEADER))) {\n+            return;\n+        }\n+        UserProfile userProfile = UserProfile.parse(request.getHeader(X_USER_PROFILE_HEADER));\n+        DevCloudTokenStore.PRINCIPAL_ID.set(userProfile.getPrincipalId());\n+        DevCloudTokenStore.PRINCIPAL_URN.set(userProfile.getPrincipalUrn());\n+        DevCloudTokenStore.setDomainId(userProfile.getAccountId());\n+        DevCloudTokenStore.DOMAIN.set(userProfile.getAccountName());\n+        DevCloudTokenStore.IS_ROOT_USER.set(userProfile.isPrincipalIsRootUser());\n+        DevCloudTokenStore.SERVICE_PRINCIPAL.set(userProfile.getServicePrincipal());\n+        DevCloudTokenStore.ENABLE_PDP5.set(userProfile.enablePdp5());\n+        DevCloudTokenStore.GROUP_IDS.set(userProfile.getGroupIds());\n+        DevCloudTokenStore.SERVICE_LINKED_AGENCY_NAME.set(userProfile.getServiceLinkedAgencyName());\n+        DevCloudTokenStore.PRINCIPAL_TYPE.set(userProfile.getPrincipalType());\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "IamAuthenticationFilter.java",
+    "start_line": 66,
+    "end_line": 96,
+    "diff_content": "@@ -66,31 +66,31 @@\n     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)\n         throws ServletException, IOException {\n         try {\n             if (!requestMatcher.matches(request)) {\n                 filterChain.doFilter(request, response);\n                 return;\n             }\n \n             userStore = DevsporeAuthSpringContextUtil.getBean(UserStore.class);\n             if (null == userStore) {\n                 log.warn(\"No UserStore SPI implementation defined!\");\n             }\n-            // v3-only: 直接按 V3 认证\n-            verifyIamV3Token(request, response, filterChain);\n-            return;\n+            if (!enableIamV5) {\n+                verifyIamV3Token(request, response, filterChain);\n+                return;\n+            }\n+            String jwtToken = getJwtToken(request);\n+            if (StringUtils.isEmpty(jwtToken)) {\n+                verifyIamV3Token(request, response, filterChain);\n+                return;\n+            }\n+            if (!verifyJwtToken(jwtToken, response)) {\n+                return;\n+            }\n+            if (StringUtils.isNotEmpty(request.getHeader(X_AUTH_TOKEN))) {\n+                verifyIamV3Token(request, response, filterChain);\n+                return;\n+            }\n+            updateDevcloudTokenStore(request);\n+            filterChain.doFilter(request, response);\n         } finally {\n             DevCloudTokenStore.clearThreadLocal();\n             ContextAttributesStore.clear();\n             RequestContext.close();\n         }\n     }\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（17–31 行）**：将占位/错误的头部常量替换成完整、规范的 IAM 头（XUP/XCA/XRP/X-Auth-Token 等），为后续 V5 解析与上下文构建提供输入来源。
+* **RC2（103–131 行）**：把仅设置基本上下文的占位实现升级为完整的 `updateDevcloudTokenStore` 与 `parseUserProfile`，把从请求头解析到的用户画像与上下文字段写入 `DevCloudTokenStore`，为 V5 场景准备好线程上下文与 `UserStore`。
+* **RC1（66–96 行）**：在过滤器主流程中引入 V5/JWT 分支与回落逻辑（优先校验 JWT；必要时回退 V3，并保持向后兼容），从而与已固定的 `verifyIamV3Token(...)` 目标实现无缝协作，完成最终行为。

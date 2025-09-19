@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ConsumerTransaction.java",
+    "start_line": 1,
+    "end_line": 6,
+    "diff_content": "@@ -1,6 +1,6 @@\n-// TODO add logger\n-// TODO add listener config\n-public class ConsumerTransaction implements RocketMQListener<OrderPaidEvent> {\n+@Slf4j\n+@Component\n+@RocketMQMessageListener(topic = \"Consumer_Transaction\",//主题\n+    consumerGroup = \"Consumer_Transaction_group\"//消费组  唯一\n+)\n+public class ConsumerTransaction implements RocketMQListener<OrderPaidEvent>, RocketMQPushConsumerLifecycleListener {\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ConsumerTransaction.java",
+    "start_line": 19,
+    "end_line": 25,
+    "diff_content": "@@ -19,7 +19,7 @@\n-// TODO: add consumer lifecycle hook\n+/**\n+ * consumer配置都是通过这个\n+ *\n+ * @param consumer consumer配置\n+ */\n+@Override\n+public void prepareStart(DefaultMQPushConsumer consumer) {\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ConsumerTransaction.java",
+    "start_line": 26,
+    "end_line": 43,
+    "diff_content": "@@ -26,18 +26,18 @@\n-    // TODO configure retry and offsets\n-}\n+    //设最大重试次数，默认16次\n+    //距离上一次重试间隔\n+    //第1次：10s    第2次：30s     第3次：1min    第4次：2min     第5次：3min     第6次：4min     第7次：5min    第8次：6min\n+    //第9次：7min   第10次：8min   第11次：9min   第12次：10min   第13次：20min   第14次：30min   第15次：1h     第16次：2h   16次以后：都是2h\n+    //某条消息在一直消费失败的前提下，将会在接下来的 4 小时 46 分钟之内进行 16 次重试，超过这个时间范围消息将不再重试投递。\n+    consumer.setMaxReconsumeTimes(3);\n+\n+    //关于消费位点,默认CONSUME_FROM_LAST_OFFSET(从上一个偏移量消费)\n+    consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);\n+\n+    //关于消费位点,从第一个偏移量消费（即全量消费,正常消息相同存储均为 3 天，3 天后会被自动删除）\n+    //consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);\n+\n+    //关于消费位点,以秒精度回溯消费时间，按指定回溯时间开始消费,默认回溯半小时前的消费时间。\n+    //时间格式为20131223171201<br>暗示2013年12月23日17点12分01秒<br>\n+    //consumer.setConsumeTimestamp(UtilAll.timeMillisToHumanString3(System.currentTimeMillis()));\n+    //consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_TIMESTAMP);\n+}\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（类与监听器装配）**：为类补齐 `@Slf4j`、`@Component` 与 `@RocketMQMessageListener` 注解，并将类实现扩展为 `RocketMQListener<OrderPaidEvent>, RocketMQPushConsumerLifecycleListener`（1–6 行）。这是让消费者具备日志能力、被 Spring 扫描并启用 MQ 监听与生命周期钩子的前置条件。
+* **RC2（引入生命周期钩子骨架）**：新增 `prepareStart(DefaultMQPushConsumer consumer)` 方法的 Javadoc、`@Override` 以及方法签名（19–25 行），为后续配置消费重试与位点提供落点，但暂不写入具体配置。
+* **RC1（配置落地）**：在 `prepareStart` 中补齐重试次数、消费位点及详尽注释（26–43 行），与最终实现保持一致，形成可运维可排障的消费配置说明。
+
+全程**未触碰**第 7–18 行的**禁止修改区域**（`onMessage` 目标实现），每一步都是朝向最终状态的**正向补丁**，所有 `+` 行均可在最终代码对应行号处找到并逐字匹配。

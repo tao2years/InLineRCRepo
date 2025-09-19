@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "FixedThreadPool.java",
+    "start_line": 2,
+    "end_line": 4,
+    "diff_content": "@@ -2,3 +2,3 @@\n public static ThreadPoolExecutor newFixedThreadPool(Integer threads) {\n-        return Executors.newFixedThreadPool(threads);\n+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());\n     }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "FixedThreadPool.java",
+    "start_line": 8,
+    "end_line": 16,
+    "diff_content": "@@ -8,9 +8,9 @@\n-public static ThreadPoolExecutor newFixedThreadPool(String name, Integer threads, int queues) {\n-        // TODO use custom thread names\n-        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(queues));\n-    }\n+public static ThreadPoolExecutor newFixedThreadPool(String name, Integer threads, int queues) {\n+        ThreadFactory factory = new ThreadFactory() {\n+            private final AtomicInteger integer = new AtomicInteger(0);\n+\n+            @Override\n+            public Thread newThread(@NotNull Runnable r) {\n+                return new Thread(r, name + \"-\" + integer.getAndIncrement());\n+            }\n+        };\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "FixedThreadPool.java",
+    "start_line": 18,
+    "end_line": 19,
+    "diff_content": "@@ -18,2 +18,2 @@\n-        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,\n-                new LinkedBlockingQueue<Runnable>(queues));\n+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,\n+                new LinkedBlockingQueue<Runnable>(queues), factory);\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基）**：将无队列上限的简易固定线程池实现（行 2–4）从旧的 `Executors.newFixedThreadPool` 升级为与最终版一致的显式 `ThreadPoolExecutor + LinkedBlockingQueue` 写法，统一构造参数与语义，为后续带命名/限队列的重载埋好“基础风格”。
+* **RC2（能力补齐）**：为重载方法（行 8–16）引入自定义 `ThreadFactory` 与递增计数器，确立线程命名规范；此时仍暂用**默认工厂返回**（下一步再切换到自定义工厂），保证演进可解释。
+* **RC1（最后一米）**：将重载方法的 `return`（行 18–19）由“仅队列”切换为“队列 + 自定义工厂 `factory`”，完成与最终版完全一致的线程命名与执行器构造。
+
+以上改动全部为**正向演进补丁**，`+` 行逐字对应最终代码且**未触碰** 5–7 行的**禁止修改区域**（目标实现）。

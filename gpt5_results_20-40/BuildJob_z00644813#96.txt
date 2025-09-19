@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 2,
+    "end_line": 4,
+    "diff_content": "@@ -2,3 +2,3 @@\n public static ExecutorService newFixedThreadPool(int nThreads) {\n-        return null;\n+        return Executors.newFixedThreadPool(nThreads);\n     }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 9,
+    "end_line": 11,
+    "diff_content": "@@ -9,3 +9,3 @@\n     public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize) {\n-        return null;\n+        return Executors.newScheduledThreadPool(corePoolSize);\n     }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "ThreadPoolManager.java",
+    "start_line": 1,
+    "end_line": 1,
+    "diff_content": "@@ -1,1 +1,1 @@\n-public class ThreadPools {\n+public class ThreadPoolManager {\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基）**：实现 `newFixedThreadPool` 的返回逻辑（2–4 行），从占位的 `return null;` 升级为最终所需的 `Executors.newFixedThreadPool(nThreads)`，奠定统一采用 `Executors.*` 工厂方法的风格。
+* **RC2（能力补齐）**：补齐 `newScheduledThreadPool` 的创建逻辑（9–11 行），确保定时线程池与固定线程池保持一致的构造范式，为整体线程池工具类完成配套能力。
+* **RC1（最后准备）**：将类名由占位名统一为最终的 `ThreadPoolManager`（第 1 行），与对外 API 命名保持一致。
+
+三步均为**正向演进补丁**，所有 `+` 行逐字匹配最终代码；并且**未触碰** 5–7 行的**禁止修改区域**（`newCachedThreadPool()` 目标实现）。

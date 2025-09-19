@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "TransactionListenerImpl.java",
+    "start_line": 1,
+    "end_line": 3,
+    "diff_content": "@@ -1,3 +1,3 @@\n-// TODO add logger\n-// TODO add transaction listener\n+@Slf4j\n+@RocketMQTransactionListener\n public class TransactionListenerImpl implements RocketMQLocalTransactionListener {"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "TransactionListenerImpl.java",
+    "start_line": 34,
+    "end_line": 47,
+    "diff_content": "@@ -34,14 +34,14 @@\n-    @Override\n-    public RocketMQLocalTransactionState checkLocalTransaction(Message msg) {\n-        return RocketMQLocalTransactionState.UNKNOWN;\n-    }\n+    @Override\n+    public RocketMQLocalTransactionState checkLocalTransaction(Message msg) {\n+        log.info(\">>>> MQ事务执行器，事务状态回查 message={} <<<<\", msg);\n+        try {\n+            String jsonString = new String((byte[]) msg.getPayload(), StandardCharsets.UTF_8);\n+            OrderPaidEvent payload = JSON.parseObject(jsonString, OrderPaidEvent.class);\n+            \n+            log.info(\"事务回查：checkLocalTransaction提交事务啦！payload ={} \", payload);\n+            return RocketMQLocalTransactionState.COMMIT;\n+        } catch (Exception e) {\n+            log.error(\"回调的事务出错啦~ e:{}\", e.getMessage(), e);\n+            return RocketMQLocalTransactionState.ROLLBACK;\n+        }\n+    }"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "TransactionListenerImpl.java",
+    "start_line": 27,
+    "end_line": 33,
+    "diff_content": "@@ -27,7 +27,7 @@\n-    /**\n-     * TODO: check local transaction status\n-     */\n+    /**\n+     * 该方法时MQ进行消息事务状态回查、\n+     * <p>\n+     *\n+     * @param msg\n+     * @return bollback, commit or unknown\n+     */"
+  }
+]
+```
+
+### notes
+
+* **RC3（地基）**：为事务监听器补齐类级注解 `@Slf4j` 与 `@RocketMQTransactionListener`（1–3 行），使后续目标方法与回查方法具备日志能力与事务监听上下文；不触碰受限方法体。
+* **RC2（能力补齐）**：将 `checkLocalTransaction` 由占位返回 `UNKNOWN` 的旧实现替换为最终版完整流程（34–47 行）：日志 → 解析 payload → 正常提交/异常回滚，形成与目标实现一致的事务处理语义与日志规范。
+* **RC1（最后准备）**：完善 `checkLocalTransaction` 的 Javadoc（27–33 行），对外明确语义与返回值，补齐文档约定。
+
+三步均为**正向演进补丁**；所有 `+` 行逐字出现在给定 Final 中；并且未触碰 4–26 行的**禁止修改区域**（`executeLocalTransaction` 目标实现）。
