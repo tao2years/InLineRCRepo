@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "KafkaProducerService.java",
+    "start_line": 5,
+    "end_line": 9,
+    "diff_content": "@@ -5,5 +5,5 @@\n-    // TODO: wire later\n-    private static KafkaTemplate<String, String> kafkaTemplate;\n-    public KafkaProducerService() {}\n+    private final KafkaTemplate<String, String> kafkaTemplate;\n+\n+    public KafkaProducerService(KafkaTemplate<String, String> kafkaTemplate) {\n+        this.kafkaTemplate = kafkaTemplate;\n+    }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "KafkaProducerService.java",
+    "start_line": 10,
+    "end_line": 23,
+    "diff_content": "@@ -10,14 +10,14 @@\n-    // 简单发送，不做校验\n-    public void send(String topic, String message) {\n-        kafkaTemplate.send(topic, message);\n-    }\n+    /**\n+     * 带回调的方法\n+     *\n+     * @param topic\n+     * @param key\n+     * @param message\n+     * @param successCallback\n+     * @param failureCallback\n+     */\n+    public void sendWithCallback(String topic, String key, String message, Runnable successCallback,\n+        Runnable failureCallback) {\n+        ListenableFuture<?> future = sendMessage(topic, key, message);\n+        future.addCallback(result -> successCallback.run(), ex -> failureCallback.run());\n+    }\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "KafkaProducerService.java",
+    "start_line": 31,
+    "end_line": 38,
+    "diff_content": "@@ -31,8 +31,8 @@\n-    // TODO: 之后再抽离KafkaTemplate工厂\n-    public static KafkaTemplate<String, String> configureKafkaTemplate(String servers) { return null; }\n+    public static KafkaTemplate<String, String> configureKafkaTemplate(String bootstrapServers) {\n+        Map<String, Object> config = new HashMap<>();\n+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);\n+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);\n+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);\n+\n+        ProducerFactory<String, String> producerFactory = new DefaultKafkaProducerFactory<>(config);\n+        return new KafkaTemplate<>(producerFactory);\n+    }\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（5–9）**：移除临时的静态模板与无参构造器，引入 `final KafkaTemplate` 字段与构造器注入，为可测试、可复用的发送能力打基础。
+* **RC2（10–23）**：将早期“裸发送”替换为最终的 `sendWithCallback`，以统一异步回调形态，后续即可复用被禁止修改的 `sendMessage(...)`。
+* **RC1（31–38）**：补齐 `configureKafkaTemplate(...)` 静态工厂，集中创建 `KafkaTemplate`，与上一步形成完整发送链路配置。
+
+三步都未触碰**禁止修改**的方法签名（`sendMessage(...)`），并按从依赖注入 → 回调封装 → 工厂配置的顺序逐步收敛到最终实现。

@@ -1,0 +1,46 @@
+### hunks\_3 (倒数第三次修改，最早的准备工作)
+
+```json
+[
+  {
+    "file_path": "RocketMQServiceImpl.java",
+    "start_line": 20,
+    "end_line": 23,
+    "diff_content": "@@ -20,4 +20,4 @@\n     @Override\n-    public SendResult sendMessage(String topicName, String tags, Object msg) {\n-        return this.rocketMqTemplate.syncSend(StringUtils.isBlank(tags) ? topicName : (topicName + \":\" + tags), MessageBuilder.withPayload(msg).build());\n-    }\n+    public SendResult sendMessage(String topicName, String tags, Object msg) {\n+        return this.sendMessage(topicName, tags, null, msg);\n+    }\n"
+  }
+]
+```
+
+### hunks\_2 (倒数第二次修改，中间准备)
+
+```json
+[
+  {
+    "file_path": "RocketMQServiceImpl.java",
+    "start_line": 27,
+    "end_line": 34,
+    "diff_content": "@@ -27,8 +27,8 @@\n         MessageBuilder<?> messageBuilder = MessageBuilder.withPayload(msg);\n         //设置key,唯一标识码要设置到keys字段，方便将来定位消息丢失问题\n         if (StringUtils.isNotBlank(key)) {\n             messageBuilder.setHeader(MessageConst.PROPERTY_KEYS, key);\n         }\n         Message<?> message = messageBuilder.build();\n-        SendResult sendResult = this.rocketMqTemplate.syncSend(StringUtils.isBlank(tags) ? topicName : (topicName + \":\" + tags), msg);\n+        SendResult sendResult = this.rocketMqTemplate.syncSend(StringUtils.isBlank(tags) ? topicName : (topicName + \":\" + tags), message);\n         if (SendStatus.SEND_OK.equals(sendResult.getSendStatus())) {\n"
+  }
+]
+```
+
+### hunks\_1 (最近一次修改，最后的准备工作)
+
+```json
+[
+  {
+    "file_path": "RocketMQServiceImpl.java",
+    "start_line": 79,
+    "end_line": 82,
+    "diff_content": "@@ -79,4 +79,4 @@\n     @Override\n-    public void sendBatchMessage(String destination, List<?> list) {\n-    }\n+    public void sendBatchMessage(String topicName, String tags, Long timeout, List<?> list) {\n+    }\n"
+  }
+]
+```
+
+### notes
+
+* **RC3（行20–23）**：将 `sendMessage(topicName,tags,Object)` 从直接发送调整为**委托**到四参重载，奠定统一入口，后续可在四参方法里集中处理 key、批量等扩展逻辑。
+* **RC2（行27–34）**：把发送入参由 `msg` 升级为构造出的 `Message`，为后续批量/扩展头（如 keys、自定义属性）打好基础。
+* **RC1（行79–82）**：将批量发送方法从 `(destination,List)` 升级为 `(topicName,tags,timeout,List)`，预留 tags 与超时控制参数，离最终形态只差具体实现细节。
+
+三步均只改动未标注为“禁止修改”的区域；从统一委托 → 消息封装 → 方法签名扩展，逐步为目标的批量发送实现铺路。
