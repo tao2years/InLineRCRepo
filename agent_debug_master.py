@@ -378,7 +378,7 @@ def main():
         if args.mode == 'basic':
             result = master.run_basic_tracing_mode()
         elif args.mode == 'performance':
-            
+            result = master.run_performance_monitoring_mode()
         
         # BREAKPOINT: 模式执行完成 - 观察结果处理
         print(f"\n🎉 调试模式 '{args.mode}' 执行完成!")
