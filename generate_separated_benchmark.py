@@ -43,17 +43,16 @@ def extract_rc_diffs(prompt: str) -> Tuple[str, str, str]:
     return rc3, rc2, rc1
 
 def parse_code_with_line_numbers(code_content: str) -> List[Tuple[int, str]]:
-    """解析带行号的代码内容"""
+    """解析带行号的代码内容，保留原始缩进"""
     lines = []
     for line in code_content.split('\n'):
-        line = line.strip()
-        if not line:
+        if not line.strip():
             continue
-        # 匹配行号格式: "  1: code content"
-        match = re.match(r'^\s*(\d+):\s*(.*)', line)
+        # 匹配行号格式: "  1: code content"，保留code content的原始缩进
+        match = re.match(r'^\s*(\d+):\s?(.*)', line)
         if match:
             line_num = int(match.group(1))
-            content = match.group(2)
+            content = match.group(2)  # 保留原始缩进，不再strip
             lines.append((line_num, content))
     return lines
 
@@ -92,16 +91,18 @@ def find_target_implementation_position(lines: List[Tuple[int, str]], selected_s
     return None
 
 def split_code_context(lines: List[Tuple[int, str]], target_start: int, target_end: int) -> Tuple[str, str]:
-    """将代码分割为上方和下方context"""
+    """将代码分割为上方和下方context，保持原始格式"""
     context_above = []
     context_below = []
-    
+
     for line_num, content in lines:
         if line_num < target_start:
-            context_above.append(f"{content}")
+            # 保持原始格式，包括行号和缩进
+            context_above.append(f"{line_num:3d}: {content}")
         elif line_num > target_end:
-            context_below.append(f"{content}")
-    
+            # 保持原始格式，包括行号和缩进
+            context_below.append(f"{line_num:3d}: {content}")
+
     return '\n'.join(context_above), '\n'.join(context_below)
 
 def generate_separated_prompt(template: str, external_imports: str, context_above: str, 

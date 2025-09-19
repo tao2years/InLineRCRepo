@@ -2239,10 +2239,16 @@ InLineRCRepo/
 
 现在您拥有了一个完美的分离式context + RC的benchmark版本，既保持了原有格式的熟悉性，又增加了Recent Changes的增强功能！
 
+**🔧 缩进修复**:
+- ✅ 修复了代码缩进被移除的问题
+- ✅ 保持原始Java代码的4空格缩进格式
+- ✅ 确保分离后的context above和below都有正确缩进
+- ✅ 验证通过：所有20条数据的缩进都正确保留
+
 **新增内容**:
-- `benchmark/nl2code_java_all_20_with_rc_separated_final.jsonl` - 最终分离式benchmark
+- `benchmark/nl2code_java_all_20_with_rc_separated_final.jsonl` - 最终分离式benchmark（缩进已修复）
 - `evaluation_prompt_template_v4_separated.txt` - 分离式prompt模板
-- `generate_separated_benchmark.py` - 智能生成器
+- `generate_separated_benchmark.py` - 智能生成器（已修复缩进处理）
 - `improve_line_numbers.py` - 行号优化器
 - `validate_separated_benchmark.py` - 质量验证器
 

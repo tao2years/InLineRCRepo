@@ -8,7 +8,7 @@ def validate_benchmark():
     print("=== 新格式验证 ===")
     
     # 读取第一条数据进行验证
-    with open('benchmark/nl2code_java_all_20_with_rc_separated.jsonl', 'r', encoding='utf-8') as f:
+    with open('benchmark/nl2code_java_all_20_with_rc_separated_final.jsonl', 'r', encoding='utf-8') as f:
         first_line = f.readline()
         data = json.loads(first_line)
 
@@ -41,7 +41,7 @@ def validate_benchmark():
     
     # 统计所有数据
     total_count = 0
-    with open('benchmark/nl2code_java_all_20_with_rc_separated.jsonl', 'r', encoding='utf-8') as f:
+    with open('benchmark/nl2code_java_all_20_with_rc_separated_final.jsonl', 'r', encoding='utf-8') as f:
         for line in f:
             if line.strip():
                 total_count += 1

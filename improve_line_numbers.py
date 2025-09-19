@@ -5,21 +5,27 @@ import json
 import re
 
 def add_line_numbers_to_context(context_lines, start_line_num=1):
-    """为context添加行号"""
+    """为context添加行号，如果已有行号则跳过"""
     if not context_lines.strip():
         return context_lines
-    
+
     lines = context_lines.split('\n')
     numbered_lines = []
     current_line = start_line_num
-    
+
     for line in lines:
         if line.strip():  # 只为非空行添加行号
-            numbered_lines.append(f"{current_line:3d}: {line}")
+            # 检查是否已经有行号格式
+            if re.match(r'^\s*\d+:\s*', line):
+                # 已经有行号，直接使用
+                numbered_lines.append(line)
+            else:
+                # 没有行号，添加行号
+                numbered_lines.append(f"{current_line:3d}: {line}")
             current_line += 1
         else:
             numbered_lines.append("")
-    
+
     return '\n'.join(numbered_lines)
 
 def improve_benchmark_item(item):
