@@ -81,7 +81,7 @@ Recent Changes约束：
         "file_path": "ClassName.java",
         "start_line": 实际行号,
         "end_line": 实际行号,
-        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 上下文行\\n-删除的行\\n+新增的行\\n 上下文行"
+        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 行数 上下文行\\n行数 - 删除的行\\n行数 + 新增的行\\n行数 上下文行"
     }}
 ]
 ```
@@ -93,7 +93,7 @@ Recent Changes约束：
         "file_path": "ClassName.java",
         "start_line": 实际行号,
         "end_line": 实际行号,
-        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 上下文行\\n-删除的行\\n+新增的行\\n 上下文行"
+        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 行数 上下文行\\n行数 - 删除的行\\n行数 + 新增的行\\n行数 上下文行"
     }}
 ]
 ```
@@ -105,9 +105,48 @@ Recent Changes约束：
         "file_path": "ClassName.java",
         "start_line": 实际行号,
         "end_line": 实际行号,
-        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 上下文行\\n-删除的行\\n+新增的行\\n 上下文行"
+        "diff_content": "@@ -实际行号,行数 +实际行号,行数 @@\\n 行数 上下文行\\n行数 - 删除的行\\n行数 + 新增的行\\n行数 上下文行"
     }}
 ]
+```
+
+[Example]
+
+### Recent Change 3 (Earliest preparation work)
+```diff
+@@ -1,1 +1,0 @@
++  1: @Slf4j
+```
+
+### Recent Change 2 (Intermediate preparation)
+```diff
+@@ -50,10 +50,0 @@
++ 50:     public static URL[] getExtensionClassLoaderUrls() {
++ 51:         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
++ 52:         ClassLoader extensionClassLoader = systemClassLoader.getParent();
++ 53: 
++ 54:         if (extensionClassLoader instanceof URLClassLoader) {
++ 55:             URLClassLoader urlClassLoader = (URLClassLoader) extensionClassLoader;
++ 56:             return urlClassLoader.getURLs();
++ 57:         }
++ 58:         return null;
++ 59:     }
+```
+
+### Recent Change 1 (Latest preparation work)
+```diff
+@@ -30,11 +30,0 @@
++ 30:     public static void loadClassWithApplicationLoader(String className) {
++ 31:         try {
++ 32:             ClassLoader appClassLoader = ClassLoader.getSystemClassLoader();
++ 33:             log.info(\"Application ClassLoader: {}\", appClassLoader);
++ 34: 
++ 35:             Class<?> loadedClass = appClassLoader.loadClass(className);
++ 36:             log.info(\"Loaded Class: {}\", loadedClass.getName());
++ 37:         } catch (ClassNotFoundException e) {
++ 38:             log.error(\"load error: {}\", e.getMessage());
++ 39:         }
++ 40:     }
 ```
 
 ### notes

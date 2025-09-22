@@ -119,7 +119,7 @@ def preserve_original_indentation(content: str, original_content: str) -> str:
     return content
 
 def find_best_match_in_context(target_content: str, context_lines: List[str]) -> tuple:
-    """在context中找到最佳匹配的行号和原始内容"""
+    """在context中找到最佳匹配的原始内容（保持缩进），不返回行号"""
     if not target_content.strip():
         return -1, target_content
 
@@ -127,7 +127,6 @@ def find_best_match_in_context(target_content: str, context_lines: List[str]) ->
     if not target_normalized:
         return -1, target_content
 
-    best_match_line = -1
     best_score = 0
     best_original_content = target_content
 
@@ -145,16 +144,15 @@ def find_best_match_in_context(target_content: str, context_lines: List[str]) ->
 
                     # 计算相似度
                     if target_normalized == line_normalized:
-                        # 完全匹配，返回原始格式的内容
-                        return int(line_num_str), line_content.strip()
+                        # 完全匹配，返回原始格式的内容（保持缩进）
+                        return -1, line_content
 
                     # 检查包含关系
                     if target_normalized in line_normalized or line_normalized in target_normalized:
                         score = 0.9
                         if score > best_score:
                             best_score = score
-                            best_match_line = int(line_num_str)
-                            best_original_content = line_content.strip()
+                            best_original_content = line_content  # 保持原始缩进
 
                     # 关键词匹配
                     target_words = set(re.findall(r'\w+', target_normalized))
@@ -168,13 +166,12 @@ def find_best_match_in_context(target_content: str, context_lines: List[str]) ->
                             # 提高阈值到0.8，确保更准确的匹配
                             if score >= 0.8 and score > best_score:
                                 best_score = score
-                                best_match_line = int(line_num_str)
-                                best_original_content = line_content.strip()
+                                best_original_content = line_content  # 保持原始缩进
             except (ValueError, IndexError):
                 continue
 
     if best_score >= 0.8:
-        return best_match_line, best_original_content
+        return -1, best_original_content
     else:
         return -1, target_content
 
@@ -213,45 +210,44 @@ def format_diff_with_line_numbers(diff_content: str, full_context: str) -> str:
             formatted_lines.append(line)
 
         elif line.startswith('+') and not line.startswith('+++'):
-            # 处理新增行
+            # 处理新增行 - 使用连续的新行号，不在context中搜索行号
             content = line[1:]  # 保留原始空格
-            if content.strip():  # 只检查是否为空行
-                # 在context中查找这行代码的真实位置和原始格式
-                real_line_num, original_content = find_best_match_in_context(content, context_lines)
-                if real_line_num > 0:
-                    formatted_lines.append(f"+ {real_line_num:2d}: {original_content}")
-                else:
-                    # 如果找不到，使用预期的新行号和原始内容
-                    formatted_lines.append(f"+ {new_line_num:2d}: {content.strip()}")
-                new_line_num += 1
-            else:
-                formatted_lines.append(line)
+            if content.strip():  # 非空行
+                # 查找原始格式但使用连续的行号
+                _, original_content = find_best_match_in_context(content, context_lines)
+                # 使用连续的新行号，确保行号逻辑正确
+                formatted_lines.append(f"+ {new_line_num:2d}: {original_content}")
+            else:  # 空行
+                # 空行也需要行号
+                formatted_lines.append(f"+ {new_line_num:2d}: ")
+            new_line_num += 1
 
         elif line.startswith('-') and not line.startswith('---'):
-            # 处理删除行
+            # 处理删除行 - 使用连续的旧行号
             content = line[1:]  # 保留原始空格
-            if content.strip():  # 只检查是否为空行
-                # 删除的行使用原始行号和内容
-                formatted_lines.append(f"- {old_line_num:2d}: {content.strip()}")
-                old_line_num += 1
-            else:
-                formatted_lines.append(line)
+            if content.strip():  # 非空行
+                # 查找原始格式但使用连续的行号
+                _, original_content = find_best_match_in_context(content, context_lines)
+                # 使用连续的旧行号，确保行号逻辑正确
+                formatted_lines.append(f"- {old_line_num:2d}: {original_content}")
+            else:  # 空行
+                # 空行也需要行号
+                formatted_lines.append(f"- {old_line_num:2d}: ")
+            old_line_num += 1
 
         elif line.startswith(' '):
-            # 上下文行（未变更的行）
+            # 上下文行（未变更的行）- 使用连续的行号
             content = line[1:]  # 保留原始空格
-            if content.strip():  # 只检查是否为空行
-                # 在context中查找真实行号和原始格式
-                real_line_num, original_content = find_best_match_in_context(content, context_lines)
-                if real_line_num > 0:
-                    formatted_lines.append(f"  {real_line_num:2d}: {original_content}")
-                else:
-                    # 使用当前行号和原始内容
-                    formatted_lines.append(f"  {old_line_num:2d}: {content.strip()}")
-                old_line_num += 1
-                new_line_num += 1
-            else:
-                formatted_lines.append(line)
+            if content.strip():  # 非空行
+                # 查找原始格式但使用连续的行号
+                _, original_content = find_best_match_in_context(content, context_lines)
+                # 使用连续的行号，确保行号逻辑正确
+                formatted_lines.append(f"  {old_line_num:2d}: {original_content}")
+            else:  # 空行
+                # 空行也需要行号
+                formatted_lines.append(f"  {old_line_num:2d}: ")
+            old_line_num += 1
+            new_line_num += 1
         else:
             # 其他行（如空行），保持不变
             formatted_lines.append(line)
