@@ -16,7 +16,7 @@ from typing import List, Tuple
 class RCDiffModifier:
     """Recent Changes Diff修改器"""
     
-    def __init__(self, file_path: str = "benchmark/nl2code_java_all_20_with_rc.jsonl"):
+    def __init__(self, file_path: str = "benchmark/nl2code_java_F20-40_with_rc_separated_final.jsonl"):
         """
         初始化修改器
         
@@ -225,7 +225,7 @@ def main():
     parser.add_argument('rc3_flag', type=int, choices=[0, 1], help='RC3标志：0=反转符号，1=保持不变')
     parser.add_argument('rc2_flag', type=int, choices=[0, 1], help='RC2标志：0=反转符号，1=保持不变')
     parser.add_argument('rc1_flag', type=int, choices=[0, 1], help='RC1标志：0=反转符号，1=保持不变')
-    parser.add_argument('--file', '-f', default='benchmark/nl2code_java_all_20_with_rc.jsonl', 
+    parser.add_argument('--file', '-f', default='benchmark/nl2code_java_F20-40_with_rc_separated_final.jsonl',
                        help='benchmark文件路径')
     parser.add_argument('--output', '-o', help='输出文件路径（默认覆盖原文件）')
     parser.add_argument('--preview', '-p', action='store_true', help='仅预览，不修改')
