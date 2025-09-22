@@ -37,44 +37,52 @@ InLineRCRepo/
 
 ## 📝 指令执行记录
 
-## 2025-09-22 Recent Changes行号对齐修复完成 ✅
+## 2025-09-22 Recent Changes行号对齐和diff格式修复完成 ✅
 
 ### 执行时间
 2025-09-22 完成
 
 ### 任务描述
-修复 `benchmark/nl2code_java_F20-40_with_rc_separated_final.jsonl` 文件中所有20条数据的Recent Changes部分行号对齐问题，确保与context code的行号完全对应。
+修复 `benchmark/nl2code_java_F20-40_with_rc_separated_final.jsonl` 文件中所有20条数据的Recent Changes部分：
+1. 行号对齐问题：确保与context code的行号完全对应
+2. diff格式问题：修复减号行和加号行的显示顺序
+3. 缩进保留问题：保持与context一致的代码缩进
 
 ### 执行结果
 ✅ **100%成功完成**
-- 处理了20条数据，59个Recent Changes块，587行diff内容
+- 处理了20条数据，59个Recent Changes块，566行diff内容
 - 成功率：100.0%
 - 所有行号现在都与context code完全对应
-- 格式统一：符号 + 4位对齐行号 + ": " + 代码内容
-- RC块之间空行规范化
+- 标准diff格式：先显示所有删除行，再显示所有添加行，最后显示上下文行
+- 完美保留原始代码缩进
 
 ### 技术实现
 1. **智能代码匹配算法**：
    - 精确匹配：基于标准化后的代码内容
    - 模糊匹配：使用相似度评分（40%阈值）
-   - 范围内回退：优先选择空行或最相似行
+   - 上下文内容获取：从context中获取正确的代码内容和缩进
 
-2. **替换对配对策略**：
-   - "- 行"与相邻"+ 行"复用行号（替换语义）
-   - 确定性一一配对，避免行号错位
+2. **标准diff格式排序**：
+   - 删除行（-）：按行号递增排序，优先显示
+   - 添加行（+）：按行号递增排序，在删除行后显示
+   - 上下文行（空格）：按行号递增排序，最后显示
 
-3. **上下文解析增强**：
-   - 正确处理context above和context below的行号范围
-   - 支持不同数量的Recent Changes（有些条目只有RC3+RC2）
+3. **缩进保留机制**：
+   - 修改正则表达式避免吃掉冒号后的空格
+   - 从context中获取原始代码内容（包含完整缩进）
+   - 移除会破坏缩进的字符串处理操作
 
 ### 新增文件
 - `tools/fix_rc_strict.py`: 核心修复脚本
 - `validate_final.py`: 验证脚本
+- `final_check.py`: 完整检查脚本
 - `debug_errors.py`: 调试脚本
+- `docs/process.md`: 完整修复流程指南
 
 ### 相关链接
 - 修复后文件：`benchmark/nl2code_java_F20-40_with_rc_separated_final.jsonl`
 - 备份文件：`benchmark/nl2code_java_F20-40_with_rc_separated_final_backup.jsonl`
+- 流程文档：`docs/process.md`
 
 ---
 

@@ -6,7 +6,7 @@ import re
 from collections import OrderedDict
 
 def parse_context(prompt_text):
-    # 解析 context above/below 到 {line_num: content}
+    # 解析 context above/below 到 {line_num: content}，保留原始缩进
     ctx = {}
 
     # 解析 context above
@@ -15,10 +15,10 @@ def parse_context(prompt_text):
         block = m.group(1)
         for line in block.split('\n'):
             line = line.rstrip()
-            m2 = re.match(r"\s*(\d+):\s*(.*)$", line)
+            m2 = re.match(r"\s*(\d+):(.*)$", line)  # 不要吃掉冒号后的空格
             if m2:
                 n = int(m2.group(1))
-                code = m2.group(2)
+                code = m2.group(2)  # 保留原始缩进，包括前导空格
                 ctx[n] = code
 
     # 解析 context below
@@ -27,10 +27,10 @@ def parse_context(prompt_text):
         block = m.group(1)
         for line in block.split('\n'):
             line = line.rstrip()
-            m2 = re.match(r"\s*(\d+):\s*(.*)$", line)
+            m2 = re.match(r"\s*(\d+):(.*)$", line)  # 不要吃掉冒号后的空格
             if m2:
                 n = int(m2.group(1))
-                code = m2.group(2)
+                code = m2.group(2)  # 保留原始缩进，包括前导空格
                 ctx[n] = code
 
     return ctx
@@ -64,7 +64,8 @@ def fuzzy_match_score(s1: str, s2: str) -> float:
 
 def strip_existing_lineno(code: str) -> str:
     # 去掉行首可能存在的（可带前导空格的）旧行号标注，如 "   4: ..."
-    return re.sub(r"^\s*\d+:\s*", "", code.strip())
+    # 但保留行号后面的所有内容，包括缩进
+    return re.sub(r"^\s*\d+:", "", code)
 
 def extract_rc_blocks(prompt_text):
     # 返回列表 [(header_text, diff_text, start_idx, end_idx)]
@@ -132,6 +133,9 @@ def assign_numbers_for_block(diff_text: str, ctx_map: dict):
         for cand in ctx_norm_to_num.get(key, []):
             if cand not in used:
                 item['num'] = cand
+                # 更新代码内容为context中的原始内容（保留缩进）
+                if cand in ctx_map:
+                    item['code'] = ctx_map[cand]
                 used.add(cand)
                 return
 
@@ -148,6 +152,9 @@ def assign_numbers_for_block(diff_text: str, ctx_map: dict):
         if best_num is not None:
             if rng_start <= best_num <= rng_end:
                 item['num'] = best_num
+                # 更新代码内容为context中的原始内容（保留缩进）
+                if best_num in ctx_map:
+                    item['code'] = ctx_map[best_num]
                 used.add(best_num)
             else:
                 # 在范围内寻找空行或最相似的行
@@ -162,6 +169,9 @@ def assign_numbers_for_block(diff_text: str, ctx_map: dict):
                             fallback_num = cand
                 if fallback_num is not None:
                     item['num'] = fallback_num
+                    # 更新代码内容为context中的原始内容（保留缩进）
+                    if fallback_num in ctx_map:
+                        item['code'] = ctx_map[fallback_num]
                     used.add(fallback_num)
 
     # 1) 先为 '+' 匹配 context 行号
@@ -209,9 +219,34 @@ def assign_numbers_for_block(diff_text: str, ctx_map: dict):
             if it['num'] is None:
                 it['num'] = allowed[0] if allowed else 1
 
+    # 确保所有行都有正确的缩进，但保持原始diff顺序
+    line_items = [it for it in items if it.get('type')=='line']
+    header_items = [it for it in items if it.get('type')=='header']
+
+    # 对所有有行号的行，尝试从context中获取正确的代码内容（包括缩进）
+    for it in line_items:
+        if it['num'] is not None and it['num'] in ctx_map:
+            # 对于"+"行和" "行，使用context中的原始内容
+            if it['sign'] in ['+', ' ']:
+                it['code'] = ctx_map[it['num']]
+
+    # 标准diff格式：先显示所有删除行，再显示所有添加行，最后显示上下文行
+    # 每组内部按行号递增排序
+    minus_items = [it for it in line_items if it['sign'] == '-']
+    plus_items = [it for it in line_items if it['sign'] == '+']
+    space_items = [it for it in line_items if it['sign'] == ' ']
+
+    # 各组内部按行号排序
+    minus_items.sort(key=lambda x: x['num'] if x['num'] is not None else 999999)
+    plus_items.sort(key=lambda x: x['num'] if x['num'] is not None else 999999)
+    space_items.sort(key=lambda x: x['num'] if x['num'] is not None else 999999)
+
+    # 重新组合：header + 删除行 + 添加行 + 上下文行
+    sorted_items = header_items + minus_items + plus_items + space_items
+
     # 输出
     out = []
-    for it in items:
+    for it in sorted_items:
         if it['type']=='header':
             out.append(it['text'])
         else:
