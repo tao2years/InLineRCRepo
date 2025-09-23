@@ -141,10 +141,14 @@ class BenchmarkBuilder:
 
         # 提取selected region
         if 'And here is the code snippet you are asked to modify:' in prompt:
-            start = prompt.rfind('```java\n') + 8
-            end = prompt.rfind('\n```')
-            if start > 7 and end > start:
-                sections['selected_region'] = prompt[start:end]
+            snippet_marker = 'And here is the code snippet you are asked to modify:'
+            snippet_start = prompt.find(snippet_marker)
+            if snippet_start != -1:
+                # 在snippet_marker之后查找```java
+                java_start = prompt.find('```java\n', snippet_start) + 8
+                java_end = prompt.find('\n```', java_start)
+                if java_start > 7 and java_end > java_start:
+                    sections['selected_region'] = prompt[java_start:java_end]
 
         return sections
 
