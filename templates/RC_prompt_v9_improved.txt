@@ -115,12 +115,16 @@ Recent Changes约束：
 ### Recent Change 3 (Earliest preparation work)
 ```diff
 @@ -1,1 +1,0 @@
+-  1: // logo
 +  1: @Slf4j
 ```
 
 ### Recent Change 2 (Intermediate preparation)
 ```diff
 @@ -50,10 +50,0 @@
+- 50:     public static URL[] getExtensionClassLoaderUrls() {
+- 51:         // TODO get Extension Class ClassLoader
+- 52：    }
 + 50:     public static URL[] getExtensionClassLoaderUrls() {
 + 51:         ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
 + 52:         ClassLoader extensionClassLoader = systemClassLoader.getParent();
