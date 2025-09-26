@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Validate Training Data</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+                display: flex;
+            }
+
+            .two-column-layout {
+                display: flex;
+                gap: 40px;
+                margin-top: 20px;
+            }
+
+            .left-column {
+                flex: 1;
+                min-width: 0; /* Prevents flex item from overflowing */
+            }
+
+            .right-column {
+                flex: 1;
+                min-width: 0; /* Prevents flex item from overflowing */
+            }
+
+            .right-column pre {
+                margin: 0;
+                height: calc(
+                    100vh - 150px
+                ); /* Adjust based on your header height */
+                overflow: auto;
+                background: white;
+                padding: 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .right-column code {
+                background: transparent;
+                padding: 0;
+            }
+
+            #main-results {
+                background: white;
+                padding: 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+            }
+
+            #sidebar {
+                width: 250px;
+                background: white;
+                height: 100vh;
+                overflow-y: auto;
+                border-right: 1px solid #ddd;
+                padding: 20px;
+                font-size: 11px;
+            }
+
+            #sidebar h2 {
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+
+            #sidebar .file-item {
+                padding: 4px 8px;
+                cursor: pointer;
+                border-radius: 4px;
+                margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            #sidebar .file-item:hover {
+                background: #f0f0f0;
+            }
+
+            #sidebar .file-item.active {
+                background: #e0e0e0;
+                font-weight: bold;
+            }
+
+            #main-content {
+                flex: 1;
+                padding: 40px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                color: #333;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            .action-buttons {
+                margin: 0 0 30px 0;
+                text-align: center;
+            }
+
+            #main-results {
+                margin-bottom: 30px;
+            }
+
+            button {
+                background-color: #4caf50;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                margin: 0 10px;
+            }
+
+            button.bad {
+                background-color: #f44336;
+            }
+
+            button:hover {
+                opacity: 0.9;
+            }
+
+            #results {
+                background: white;
+                padding: 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            #results div {
+                margin: 10px 0;
+                padding: 10px;
+                border-bottom: 1px solid #eee;
+            }
+
+            code {
+                white-space: pre-wrap;
+                display: block;
+                padding: 10px;
+                background: #f8f8f8;
+                border-radius: 4px;
+                font-family: monospace;
+            }
+
+            .diff-add {
+                background-color: #e6ffe6;
+                color: #006400;
+                margin: 0;
+                border-radius: 3px;
+                display: inline;
+            }
+
+            .diff-remove {
+                background-color: #ffe6e6;
+                color: #640000;
+                margin: 0;
+                border-radius: 3px;
+                display: inline;
+            }
+
+            #raw-xml-section {
+                margin-top: 30px;
+                border-top: 1px solid #ddd;
+                padding-top: 20px;
+            }
+
+            .foldable {
+                cursor: pointer;
+            }
+
+            .foldable-content {
+                display: none;
+            }
+
+            .foldable::before {
+                content: "▶ ";
+            }
+
+            .foldable.unfolded::before {
+                content: "▼ ";
+            }
+
+            .keyboard-hint {
+                color: #666;
+                font-size: 0.8em;
+                margin-left: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="sidebar">
+            <h2>Files (<span id="file-count">0</span>)</h2>
+            <div id="file-list">
+                <!-- Files will be inserted here -->
+            </div>
+        </div>
+
+        <div id="main-content">
+            <h1>XML Validator</h1>
+
+            <div class="two-column-layout">
+                <div class="left-column">
+                    <div class="action-buttons">
+                        <button onclick="rateFile('good')">
+                            Good <span class="keyboard-hint">[G]</span>
+                        </button>
+                        <button class="bad" onclick="rateFile('bad')">
+                            Bad <span class="keyboard-hint">[B]</span>
+                        </button>
+                    </div>
+
+                    <div id="main-results">
+                        <div>Rating: <code id="rating"></code></div>
+                        <div>Feedback: <code id="feedback"></code></div>
+                        <div>Suggestion: <code id="suggestion"></code></div>
+                    </div>
+
+                    <div class="foldable" onclick="toggleFold(this)">
+                        Input: <code id="input" class="foldable-content"></code>
+                    </div>
+                    <div class="foldable" onclick="toggleFold(this)">
+                        Output:
+                        <code id="output" class="foldable-content"></code>
+                    </div>
+                    <div class="foldable" onclick="toggleFold(this)">
+                        Raw XML:
+                        <code id="xmlContent" class="foldable-content"></code>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <pre><code id="events"></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+        <script>
+            let currentFile = null;
+            let allFiles = [];
+
+            function getTagContent(content, tag) {
+                const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`);
+                const match = content.match(regex);
+                return match ? match[1].trim() : "";
+            }
+
+            function generateDiff(input, output) {
+                input = input.replace("<|user_cursor_is_here|>", "");
+
+                const dmp = new diff_match_patch();
+                const diffs = dmp.diff_main(input, output);
+                dmp.diff_cleanupSemantic(diffs);
+
+                let result = "";
+                for (let [operation, text] of diffs) {
+                    text = text
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                    if (operation === -1) {
+                        result += `<span class="diff-remove">${text}</span>`;
+                    } else if (operation === 1) {
+                        result += `<span class="diff-add">${text}</span>`;
+                    } else {
+                        result += text;
+                    }
+                }
+                return result;
+            }
+
+            function parseXml() {
+                let xmlText = document.getElementById("xmlContent").textContent;
+
+                let rating = getTagContent(xmlText, "rating");
+                let feedback = getTagContent(xmlText, "feedback");
+                let events = getTagContent(xmlText, "events");
+                let input = getTagContent(xmlText, "input");
+                let output = getTagContent(xmlText, "output");
+
+                document.getElementById("rating").textContent = rating;
+                document.getElementById("feedback").textContent = feedback;
+                document.getElementById("events").textContent = events;
+                document.getElementById("input").textContent = input;
+                document.getElementById("output").textContent = output;
+                document.getElementById("suggestion").innerHTML = generateDiff(
+                    input,
+                    output,
+                );
+            }
+
+            function toggleFold(element) {
+                element.classList.toggle("unfolded");
+                const content = element.querySelector(".foldable-content");
+                if (
+                    content.style.display === "none" ||
+                    content.style.display === ""
+                ) {
+                    content.style.display = "block";
+                } else {
+                    content.style.display = "none";
+                }
+            }
+
+            async function loadFiles() {
+                const response = await fetch("/api/files");
+                const data = await response.json();
+                allFiles = data.files;
+                updateFileList();
+                if (allFiles.length > 0) {
+                    await loadFile(allFiles[0]);
+                }
+            }
+
+            function updateFileList() {
+                const fileList = document.getElementById("file-list");
+                document.getElementById("file-count").textContent =
+                    allFiles.length;
+                fileList.innerHTML = allFiles
+                    .map(
+                        (file) => `
+                    <div class="file-item ${file === currentFile ? "active" : ""}" 
+                         onclick="loadFile('${file}')">
+                        ${file}
+                    </div>
+                `,
+                    )
+                    .join("");
+            }
+
+            async function loadFile(filename) {
+                currentFile = filename;
+                updateFileList();
+
+                const response = await fetch(`/api/file/${filename}`);
+                const data = await response.json();
+
+                document.getElementById("xmlContent").textContent =
+                    data.content;
+                parseXml();
+            }
+
+            async function rateFile(action) {
+                if (!currentFile) return;
+
+                const response = await fetch(
+                    `/api/rate/${currentFile}?action=${action}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    },
+                );
+
+                const data = await response.json();
+
+                allFiles = allFiles.filter((f) => f !== currentFile);
+
+                if (allFiles.length > 0) {
+                    await loadFile(allFiles[0]);
+                } else {
+                    alert("No more files to process!");
+                    document.getElementById("xmlContent").textContent = "";
+                    currentFile = null;
+                }
+                updateFileList();
+            }
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key.toLowerCase() === "g") {
+                    rateFile("good");
+                } else if (event.key.toLowerCase() === "b") {
+                    rateFile("bad");
+                }
+            });
+
+            document.addEventListener("DOMContentLoaded", loadFiles);
+        </script>
+    </body>
+</html>

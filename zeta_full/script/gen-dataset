@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+// Get all .md files recursively
+const getFiles = (dir) => {
+  const files = fs.readdirSync(dir);
+  return files.reduce((acc, file) => {
+    const filePath = path.join(dir, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      return acc.concat(getFiles(filePath));
+    }
+    if (path.extname(file) === ".md") {
+      return acc.concat(filePath);
+    }
+    return acc;
+  }, []);
+};
+
+// Function to process files from a directory
+const processDirectory = (directory, outputFile) => {
+  // Create an empty output file
+  fs.writeFileSync(outputFile, "");
+
+  // Process each file
+  const files = getFiles(directory);
+  files.forEach((file) => {
+    const content = fs.readFileSync(file, "utf8");
+
+    // Extract content between tags
+    const getTagContent = (tag) => {
+      const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`);
+      const match = content.match(regex);
+      return match ? match[1].trim() : "";
+    };
+
+    const events = getTagContent("events");
+    const input = getTagContent("input");
+    const output = getTagContent("output");
+    const rejected = getTagContent("rejected");
+    const assertions = getTagContent("assertions");
+
+    // Create JSON object and append to output file
+    const jsonLine =
+      JSON.stringify({ events, input, output, rejected, assertions }) + "\n";
+    fs.appendFileSync(outputFile, jsonLine);
+  });
+};
+
+const checkFormatPath = path.join(__dirname, "check-format");
+try {
+  execSync(checkFormatPath, { stdio: "inherit" });
+} catch (error) {
+  process.exit(1);
+}
+
+processDirectory("train", "train.jsonl");
+processDirectory("eval", "eval.jsonl");
+processDirectory("dpo", "dpo.jsonl");

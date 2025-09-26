@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+
+const fs = require("fs");
+const path = require("path");
+
+function processFile(filePath, ensureAssertions, ensureRejected) {
+  let content = fs.readFileSync(filePath, "utf8");
+
+  // Find input and output blocks
+  const inputMatch = content.match(/<input>([\s\S]*?)<\/input>/);
+  const outputMatch = content.match(/<output>([\s\S]*?)<\/output>/);
+  const labelsMatch = content.match(/<labels>([\s\S]*?)<\/labels>/);
+  const eventsMatch = content.match(/<events>([\s\S]*?)<\/events>/);
+  const assertionsMatch = content.match(/<assertions>([\s\S]*?)<\/assertions>/);
+  const rejectedMatch = content.match(/<rejected>([\s\S]*?)<\/rejected>/);
+
+  if (
+    !inputMatch ||
+    !outputMatch ||
+    !labelsMatch ||
+    !eventsMatch ||
+    (ensureAssertions && !assertionsMatch) ||
+    (ensureRejected && !rejectedMatch)
+  ) {
+    const missing = [];
+    if (!inputMatch) missing.push("input");
+    if (!outputMatch) missing.push("output");
+    if (!labelsMatch) missing.push("labels");
+    if (!eventsMatch) missing.push("events");
+    if (ensureAssertions && !assertionsMatch) missing.push("assertions");
+    if (ensureRejected && !rejectedMatch) missing.push("rejected");
+    throw new Error(
+      `Skipping ${filePath}: Could not find ${missing.join(", ")} block(s)`,
+    );
+  }
+
+  const inputContent = inputMatch[1];
+  const outputContent = outputMatch[1];
+  const labelsContent = labelsMatch[1];
+
+  // Check input content
+  if (!inputContent.trim()) {
+    throw new Error(`Input content is empty in ${filePath}`);
+  }
+
+  const editableStartCount = (
+    inputContent.match(/<\|editable_region_start\|>/g) || []
+  ).length;
+  const editableEndCount = (
+    inputContent.match(/<\|editable_region_end\|>/g) || []
+  ).length;
+  const cursorCount = (inputContent.match(/<\|user_cursor_is_here\|>/g) || [])
+    .length;
+
+  if (editableStartCount !== 1 || editableEndCount !== 1 || cursorCount !== 1) {
+    throw new Error(
+      `Input content must contain exactly one instance each of editable region markers and cursor in ${filePath}`,
+    );
+  }
+
+  // Check labels content
+  if (!labelsContent.trim()) {
+    throw new Error(`Labels content is empty in ${filePath}`);
+  }
+
+  // Check output content
+  if (!outputContent.trim()) {
+    throw new Error(`Output content is empty in ${filePath}`);
+  }
+
+  const outputEditableStartCount = (
+    outputContent.match(/<\|editable_region_start\|>/g) || []
+  ).length;
+  const outputEditableEndCount = (
+    outputContent.match(/<\|editable_region_end\|>/g) || []
+  ).length;
+  const outputCursorCount = (
+    outputContent.match(/<\|user_cursor_is_here\|>/g) || []
+  ).length;
+
+  if (
+    outputEditableStartCount !== 1 ||
+    outputEditableEndCount !== 1 ||
+    outputCursorCount !== 0
+  ) {
+    throw new Error(
+      `Output content must contain exactly one instance of each editable region marker and no cursor in ${filePath}`,
+    );
+  }
+
+  // Check that content before editable region is the same
+  const inputPreEditable = inputContent.split("<|editable_region_start|>")[0];
+  const outputPreEditable = outputContent.split("<|editable_region_start|>")[0];
+
+  if (inputPreEditable !== outputPreEditable) {
+    throw new Error(
+      `Content before editable region must be identical in input and output in ${filePath}`,
+    );
+  }
+
+  // Check that content after editable region is the same
+  const inputPostEditable = inputContent.split("<|editable_region_end|>")[1];
+  const outputPostEditable = outputContent.split("<|editable_region_end|>")[1];
+
+  if (inputPostEditable !== outputPostEditable) {
+    throw new Error(
+      `Content after editable region must be identical in input and output in ${filePath}`,
+    );
+  }
+
+  // Check assertions if required
+  if (ensureAssertions) {
+    const assertionsContent = assertionsMatch[1];
+    if (!assertionsContent.trim()) {
+      throw new Error(`Assertions content is empty in ${filePath}`);
+    }
+  }
+}
+
+function processDirectory(dirPath, assertions, rejected) {
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    if (file.endsWith(".md")) {
+      const fullPath = path.join(dirPath, file);
+      processFile(fullPath, assertions, rejected);
+    }
+  });
+}
+
+const args = process.argv.slice(2);
+
+// Process train directory
+const trainPath = "./train/";
+if (fs.existsSync(trainPath)) {
+  processDirectory(trainPath, false, false);
+}
+
+// Process dpo directory
+const dpoPath = "./dpo/";
+if (fs.existsSync(dpoPath)) {
+  processDirectory(dpoPath, false, true);
+}
+
+// Process eval directory
+const evalPath = "./eval/";
+if (fs.existsSync(evalPath)) {
+  processDirectory(evalPath, true, false);
+}

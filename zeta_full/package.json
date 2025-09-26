@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "diff": "^7.0.0",
+    "openai": "^4.80.1",
+    "random-seed": "^0.3.0",
+    "snowflake-sdk": "^1.15.0",
+    "yargs": "^17.7.2"
+  }
+}

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Diff Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        pre code {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+            display: block;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/7.0.0/diff.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="column">
+            <label for="filename">Filename:</label>
+            <input type="text" id="filename" placeholder="Enter filename" />
+
+            <label for="input-code">Input Code:</label>
+            <textarea id="input-code" placeholder="Paste original code here"></textarea>
+
+            <div style="text-align: center;">
+                <button onclick="flipContents()">↕ Flip contents</button>
+            </div>
+
+            <label for="modified-code">Modified Code:</label>
+            <textarea id="modified-code" placeholder="Edit code here"></textarea>
+
+            <button onclick="generateOutput()">Generate</button>
+        </div>
+        <div class="column">
+            <label for="output">Diff:</label>
+            <pre><code id="output"></code></pre>
+            <button id="copy-button" onclick="copyToClipboard()">
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // When input code changes, copy it to modified code if modified is empty
+        document
+            .getElementById("input-code")
+            .addEventListener("input", function () {
+                const modifiedCode =
+                    document.getElementById("modified-code");
+                if (!modifiedCode.value) {
+                    modifiedCode.value = this.value;
+                }
+            });
+
+        function generateOutput() {
+            // Get the input and modified code, trim trailing newlines
+            const input = document.getElementById("input-code").value;
+            const modified = document.getElementById("modified-code").value;
+
+            const filename = document.getElementById("filename").value;
+            if (!filename) {
+                alert("Please enter a filename");
+                return;
+            }
+
+            const patch = generatePatch(filename, input, modified);
+            // Remove the header lines (first four lines of the patch)
+            const diff = patch.split("\n").slice(4).join("\n");
+            // Remove the trailing newline.
+            const diffWithoutTrailingNewline = diff.trim();
+
+            const editableRegionStartTag = "<|editable_region_start|>";
+            const editableRegionEndTag = "<|editable_region_end|>";
+
+            let modifiedWithoutTrailingNewline = modified.replace(/\n$/, "");
+            const modifiedLines = modifiedWithoutTrailingNewline.split("\n");
+            modifiedLines.splice(1, 0, editableRegionStartTag);
+            modifiedLines.splice(
+                modifiedLines.length - 1,
+                0,
+                editableRegionEndTag,
+            );
+            const modifiedWithTags = modifiedLines.join("\n");
+
+            let eventsTag = `<events>\nUser edited file: "${filename}":\n\n\`\`\`diff\n${diffWithoutTrailingNewline}\n\`\`\`\n</events>`;
+            let inputTag = `<input>\n\`\`\`${filename}\n${modifiedWithTags}\n\`\`\`\n</input>`;
+            let outputTag = `<output>\n\`\`\`${filename}\n${modifiedWithTags}\n\`\`\`\n</output>`;
+
+            let textContent = [eventsTag, inputTag, outputTag].join("\n\n");
+            document.getElementById("output").textContent = textContent;
+        }
+
+        function generatePatch(filename, input, modified) {
+            // Create unified diff using jsdiff
+            return Diff.createPatch(filename, input, modified, "", "", {
+                context: 3,
+                ignoreNewlineAtEof: true,
+            });
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById("output").textContent;
+            navigator.clipboard.writeText(text);
+            // Add a checkmark to the button
+            document.getElementById("copy-button").textContent = "Copied!";
+            // make it disappear after 2 seconds
+            setTimeout(() => {
+                document.getElementById("copy-button").textContent = "Copy";
+            }, 2000);
+        }
+
+        function flipContents() {
+            const input = document.getElementById("input-code");
+            const inputValue = input.value;
+            const modified = document.getElementById("modified-code");
+            const modifiedValue = modified.value;
+            input.value = modifiedValue;
+            modified.value = inputValue;
+        }
+    </script>
+</body>
+
+</html>

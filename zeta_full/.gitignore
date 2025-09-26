@@ -1,0 +1,4 @@
+snowflake.log
+node_modules
+.env
+.venv

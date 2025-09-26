@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+
+import os
+import glob
+from pathlib import Path
+import re
+from collections import Counter
+
+def read_file(path: str) -> str:
+    with open(path, 'r') as f:
+        return f.read()
+
+def extract_labels(content: str) -> list[str]:
+    # Find content between <labels> tags
+    match = re.search(r'<labels>(.*?)</labels>', content, re.DOTALL)
+    if not match:
+        return []
+
+    # Extract labels - they're usually in format [`label1`, `label2`] or just text
+    labels_text = match.group(1).strip()
+
+    # Try to find all labels wrapped in backticks
+    backtick_labels = re.findall(r'`([^`]+)`', labels_text)
+    if backtick_labels:
+        return [label.strip() for label in backtick_labels]
+
+    # If no backtick labels found, split by commas and clean up
+    return [label.strip().strip('[]`') for label in labels_text.split(',')]
+
+def main():
+    train_dir = Path("train")
+    if not train_dir.exists():
+        print(f"Error: {train_dir} directory not found")
+        return
+
+    md_files = glob.glob(str(train_dir / "*.md"))
+    label_counter = Counter()
+    files_with_labels = 0
+    files_without_labels = []
+
+    for file_path in md_files:
+        content = read_file(file_path)
+        labels = extract_labels(content)
+        if labels:
+            files_with_labels += 1
+            label_counter.update(labels)
+        else:
+            files_without_labels.append(file_path)
+
+    # Print distribution
+    print(f"\nLabel distribution ({files_with_labels} files with labels):\n")
+
+    # Sort by frequency, then alphabetically
+    for label, count in sorted(label_counter.items(), key=lambda x: (-x[1], x[0])):
+        print(f"{label}: {count}")
+
+    # Print warning for files without labels
+    if files_without_labels:
+        print("\nWarning: The following files have no labels:")
+        for file_path in files_without_labels:
+            print(f"  {file_path}")
+
+if __name__ == "__main__":
+    main()

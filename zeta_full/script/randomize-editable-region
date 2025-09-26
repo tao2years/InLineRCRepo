@@ -1,0 +1,156 @@
+#!/usr/bin/env node
+
+const fs = require("fs");
+const path = require("path");
+const random_seed = require("random-seed");
+
+function processFile(filePath, dryRun) {
+  const seed = Buffer.from(filePath).reduce((acc, byte) => acc + byte, 0);
+  const rng = random_seed.create(seed);
+
+  let content = fs.readFileSync(filePath, "utf8");
+
+  // Find input and output blocks
+  const inputMatch = content.match(/<input>([\s\S]*?)<\/input>/);
+  const outputMatch = content.match(/<output>([\s\S]*?)<\/output>/);
+
+  if (!inputMatch || !outputMatch) {
+    console.log(
+      `Skipping ${filePath}: Could not find input, output, or labels blocks`,
+    );
+    return;
+  }
+
+  // Extract input and output content
+  let inputContent = inputMatch[1];
+  let outputContent = outputMatch[1];
+
+  // Find editable regions
+  const inputStartMatch = inputContent.match(/<\|editable_region_start\|>/);
+  const inputEndMatch = inputContent.match(/<\|editable_region_end\|>/);
+  const outputStartMatch = outputContent.match(/<\|editable_region_start\|>/);
+  const outputEndMatch = outputContent.match(/<\|editable_region_end\|>/);
+
+  if (
+    !inputStartMatch ||
+    !inputEndMatch ||
+    !outputStartMatch ||
+    !outputEndMatch
+  ) {
+    console.log(`Skipping ${filePath}: Could not find editable region markers`);
+    return;
+  }
+
+  // Split content into lines
+  const inputLines = inputContent.split("\n");
+  const outputLines = outputContent.split("\n");
+
+  const inputStartIndex = inputLines.findIndex((line) =>
+    line.includes("<|editable_region_start|>"),
+  );
+  const inputEndIndex = inputLines.findIndex((line) =>
+    line.includes("<|editable_region_end|>"),
+  );
+  const outputStartIndex = outputLines.findIndex((line) =>
+    line.includes("<|editable_region_start|>"),
+  );
+  const outputEndIndex = outputLines.findIndex((line) =>
+    line.includes("<|editable_region_end|>"),
+  );
+
+  // Find cursor position
+  const cursorIndex = inputLines.findIndex((line) =>
+    line.includes("<|user_cursor_is_here|>"),
+  );
+
+  // Find matching lines before editable regions
+  let newStartIndex = inputStartIndex;
+  let firstDifferentIndex = inputEndIndex;
+
+  // Find where input and output first differ
+  for (let i = inputStartIndex + 1; i < inputEndIndex; i++) {
+    if (inputLines[i] !== outputLines[i]) {
+      firstDifferentIndex = i;
+      break;
+    }
+  }
+
+  // Use RNG to pick a point between start and first difference
+  let maxIndex = Math.min(firstDifferentIndex - 1, cursorIndex - 2);
+  if (maxIndex > inputStartIndex) {
+    newStartIndex = rng.intBetween(inputStartIndex, maxIndex);
+  }
+
+  // Find matching lines after editable regions
+  let newEndInputIndex = inputEndIndex;
+  let newEndOutputIndex = outputEndIndex;
+  let lastDifferentIndex = inputEndIndex;
+
+  // Find where input and output last differ going backwards
+  for (let i = inputEndIndex - 1; i > newStartIndex; i--) {
+    if (inputLines[i] !== outputLines[i]) {
+      lastDifferentIndex = i;
+      break;
+    }
+  }
+
+  // Use RNG to pick point between last difference and end
+  let minIndex = Math.max(lastDifferentIndex + 1, cursorIndex + 2);
+  if (minIndex < inputEndIndex) {
+    newEndInputIndex = rng.intBetween(minIndex, inputEndIndex);
+    const delta = inputEndIndex - newEndInputIndex;
+    newEndOutputIndex = outputEndIndex - delta;
+  }
+
+  // Update the content if changes were made
+  if (newStartIndex !== inputStartIndex || newEndInputIndex !== inputEndIndex) {
+    // Remove lines containing markers
+    inputLines.splice(inputStartIndex, 1);
+    inputLines.splice(inputEndIndex - 1, 1); // Adjust for previous removal
+    outputLines.splice(outputStartIndex, 1);
+    outputLines.splice(outputEndIndex - 1, 1); // Adjust for previous removal
+
+    // Insert new marker lines
+    inputLines.splice(newStartIndex, 0, "<|editable_region_start|>");
+    inputLines.splice(newEndInputIndex, 0, "<|editable_region_end|>");
+    outputLines.splice(newStartIndex, 0, "<|editable_region_start|>");
+    outputLines.splice(newEndOutputIndex, 0, "<|editable_region_end|>");
+
+    const newContent = content
+      .replace(inputMatch[0], `<input>${inputLines.join("\n")}</input>`)
+      .replace(outputMatch[0], `<output>${outputLines.join("\n")}</output>`);
+
+    if (dryRun) {
+      console.log(`Would update ${filePath} (dry run): ${newContent}`);
+    } else {
+      fs.writeFileSync(filePath, newContent);
+      console.log(`Updated ${filePath}`);
+    }
+  }
+}
+
+// Process a directory of markdown files
+function processDirectory(dirPath, dryRun) {
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    if (file.endsWith(".md")) {
+      const fullPath = path.join(dirPath, file);
+      processFile(fullPath, dryRun);
+    }
+  });
+}
+
+// Check for --dry-run or -d flag
+const args = process.argv.slice(2);
+const dryRun = args.includes("--dry-run") || args.includes("-d");
+const inputPath = args.find((arg) => !arg.startsWith("-"));
+const stats = fs.statSync(inputPath);
+
+if (stats.isDirectory()) {
+  processDirectory(inputPath, dryRun);
+} else if (stats.isFile() && inputPath.endsWith(".md")) {
+  processFile(inputPath, dryRun);
+} else {
+  console.log("Please provide a markdown file or directory path");
+}

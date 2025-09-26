@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import re
+from pathlib import Path
+
+def validate_diffs(events_text):
+    pos = 0
+    diffs = []
+    while True:
+        start = events_text.find('```diff', pos)
+        if start == -1:
+            break
+
+        count = 1
+        pos = start + 6
+        while count > 0:
+            next_start = events_text.find('```', pos)
+            if next_start == -1:
+                return False, 0
+
+            if events_text.startswith('diff', next_start + 3):
+                count += 1
+            else:
+                count -= 1
+            pos = next_start + 3  # Move pos update *after* handling diff
+
+        diffs.append(events_text[start:pos])
+
+    for diff in diffs:
+        if not diff.startswith('```diff'):
+            return False, 0
+
+    return True, len(diffs)
+
+def process_file(file_path, max_diff_count):
+    try:
+        with open(file_path) as f:
+            content = f.read()
+
+        # Extract events tag content
+        events_match = re.search(r'<events>(.*?)</events>', content, re.DOTALL)
+        if not events_match:
+            return
+
+        events_text = events_match.group(1)
+
+        # Validate diffs
+        valid, diff_count = validate_diffs(events_text)
+
+        if not valid:
+            print(f"errors in file {file_path}")
+        elif diff_count > max_diff_count:
+            print(f"big edits in file {file_path}")
+
+    except Exception as e:
+        print(f"errors in file {file_path}")
+
+def main():
+    if len(sys.argv) != 3:
+        print("Please provide directory path and max diff count")
+        sys.exit(1)
+
+    dir_path = sys.argv[1]
+    max_diff_count = int(sys.argv[2])
+
+    if not os.path.isdir(dir_path):
+        print("Invalid directory path")
+        sys.exit(1)
+
+    # Process each file in sorted order
+    for file_path in sorted(Path(dir_path).glob('*')):
+        if file_path.is_file():
+            process_file(file_path, max_diff_count)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Validate Training Data</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 40px auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+
+            h1 {
+                color: #333;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+
+            textarea {
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 4px;
+                font-family: monospace;
+                margin-bottom: 15px;
+            }
+
+            button {
+                background-color: #4caf50;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
+
+            button:hover {
+                background-color: #45a049;
+            }
+
+            #results {
+                background: white;
+                padding: 20px;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            #results div {
+                margin: 10px 0;
+                padding: 10px;
+                border-bottom: 1px solid #eee;
+            }
+
+            #results span {
+                color: #666;
+                margin-left: 10px;
+            }
+
+            code {
+                white-space: pre-wrap;
+                display: block;
+                padding: 10px;
+                background: #f8f8f8;
+                border-radius: 4px;
+            }
+
+            .diff-add {
+                background-color: #e6ffe6;
+                color: #006400;
+                margin: 0;
+                border-radius: 3px;
+                display: inline;
+                margin-left: 0 !important;
+            }
+
+            .diff-remove {
+                background-color: #ffe6e6;
+                color: #640000;
+                margin: 0;
+                border-radius: 3px;
+                display: inline;
+                margin-left: 0 !important;
+            }
+
+            #suggestion {
+                white-space: pre;
+                overflow-x: auto;
+            }
+
+            .foldable {
+                cursor: pointer;
+            }
+
+            .foldable-content {
+                display: none;
+            }
+
+            .foldable::before {
+                content: "▶ ";
+            }
+
+            .foldable.unfolded::before {
+                content: "▼ ";
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <h1>XML Validator</h1>
+            <textarea
+                id="xmlTextArea"
+                rows="10"
+                cols="50"
+                placeholder="Paste your XML here..."
+            ></textarea>
+            <br />
+            <button onclick="parseXml()">Verify</button>
+
+            <div id="results">
+                <div>Rating: <code id="rating"></code></div>
+                <div>Feedback: <code id="feedback"></code></div>
+                <div>Suggestion: <code id="suggestion"></code></div>
+                <div class="foldable" onclick="toggleFold(this)">
+                    Events: <code id="events" class="foldable-content"></code>
+                </div>
+                <div class="foldable" onclick="toggleFold(this)">
+                    Input: <code id="input" class="foldable-content"></code>
+                </div>
+                <div class="foldable" onclick="toggleFold(this)">
+                    Output: <code id="output" class="foldable-content"></code>
+                </div>
+            </div>
+
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+            <script>
+                function getTagContent(content, tag) {
+                    const regex = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`);
+                    const match = content.match(regex);
+                    return match ? match[1].trim() : "";
+                }
+
+                function generateDiff(input, output) {
+                    input = input.replace("<|user_cursor_is_here|>", "");
+
+                    const dmp = new diff_match_patch();
+                    const diffs = dmp.diff_main(input, output);
+                    dmp.diff_cleanupSemantic(diffs);
+
+                    let result = "";
+                    for (let [operation, text] of diffs) {
+                        text = text
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/"/g, "&quot;")
+                            .replace(/'/g, "&#039;");
+                        if (operation === -1) {
+                            result += `<span class="diff-remove">${text}</span>`;
+                        } else if (operation === 1) {
+                            result += `<span class="diff-add">${text}</span>`;
+                        } else {
+                            result += text;
+                        }
+                    }
+                    console.log(result);
+                    return result;
+                }
+
+                function parseXml() {
+                    let xmlText = document.getElementById("xmlTextArea").value;
+
+                    let rating = getTagContent(xmlText, "rating");
+                    let feedback = getTagContent(xmlText, "feedback");
+                    let events = getTagContent(xmlText, "events");
+                    let input = getTagContent(xmlText, "input");
+                    let output = getTagContent(xmlText, "output");
+
+                    console.log("rating:", rating);
+                    console.log("feedback:", feedback);
+                    console.log("events:", events);
+                    console.log("input:", input);
+                    console.log("output:", output);
+
+                    document.getElementById("rating").textContent = rating;
+                    document.getElementById("feedback").textContent = feedback;
+                    document.getElementById("events").textContent = events;
+                    document.getElementById("input").textContent = input;
+                    document.getElementById("output").textContent = output;
+                    document.getElementById("suggestion").innerHTML =
+                        generateDiff(input, output);
+                }
+
+                function toggleFold(element) {
+                    element.classList.toggle("unfolded");
+                    const content = element.querySelector(".foldable-content");
+                    if (
+                        content.style.display === "none" ||
+                        content.style.display === ""
+                    ) {
+                        content.style.display = "block";
+                    } else {
+                        content.style.display = "none";
+                    }
+                }
+            </script>
+        </div>
+    </body>
+</html>

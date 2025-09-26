@@ -1,0 +1,161 @@
+#!/usr/bin/env node
+
+const snowflake = require("snowflake-sdk");
+const fs = require("fs");
+const path = require("path");
+
+const Logger = require("snowflake-sdk/lib/logger.js");
+Logger.getInstance().configure({ level: -1 });
+
+const username = process.env.FEEDBACK_SNOWFLAKE_USERNAME;
+const password = process.env.FEEDBACK_SNOWFLAKE_PASSWORD;
+
+if (!username) {
+  console.error(
+    "Missing required environment variable FEEDBACK_SNOWFLAKE_USERNAME",
+  );
+  process.exit(1);
+}
+
+if (!password) {
+  console.error(
+    "Missing required environment variable FEEDBACK_SNOWFLAKE_PASSWORD",
+  );
+  process.exit(1);
+}
+
+const connection = snowflake.createConnection({
+  account: "ydb25213.us-east-1", // Account locator in us-east-1
+  username: username,
+  password: password,
+  warehouse: "compute_wh",
+  database: "EVENTS",
+  role: "ACCOUNTADMIN",
+});
+
+// Connect to Snowflake
+const connectToSnowflake = () => {
+  return new Promise((resolve, reject) => {
+    connection.connectAsync((err, conn) => {
+      if (err) {
+        console.error("Unable to connect:", err);
+        reject(err);
+        return;
+      }
+      resolve(connection);
+    });
+  });
+};
+
+const LAST_PULL_TIMESTAMP_PATH = path.join(__dirname, "/last_predictions_pull");
+const resolveLastPullTimestamp = () => {
+  try {
+    return fs.readFileSync(LAST_PULL_TIMESTAMP_PATH, "utf8").trim();
+  } catch (error) {
+    console.error("Error reading last_predictions_pull file:", error);
+    throw error;
+  }
+};
+
+async function runQuery(query, connection) {
+  return new Promise((resolve, reject) => {
+    connection.execute({
+      sqlText: query,
+      complete: function (err, stmt, rows) {
+        if (err) {
+          console.error("Failed to execute query:", err);
+          reject(err);
+          return;
+        }
+        resolve(rows);
+      },
+    });
+  });
+}
+
+function formatDateWithNanos(date) {
+  // Format the date part
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
+
+  // Format nanoseconds (ensuring it's 9 digits long)
+  const nanosStr = String(date.getNanoSeconds()).padStart(9, "0");
+
+  // Combine everything
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${nanosStr}`;
+}
+
+async function main() {
+  console.log("Connecting to Snowflake...");
+  const connection = await connectToSnowflake();
+  console.log("Connected!");
+
+  const lastPullTimestamp = resolveLastPullTimestamp();
+  console.log(`Last Pull: ${lastPullTimestamp}, pulling predictions...`);
+  const feedbackEvents = await runQuery(
+    `
+      SELECT
+        time,
+        event_properties:outline AS outline,
+        event_properties:input_events AS input_events,
+        event_properties:input_excerpt AS input_excerpt,
+        event_properties:output AS output
+      FROM
+        events
+      WHERE
+        event_type = 'Predictive Edit Requested' AND 
+        time > '${lastPullTimestamp}' AND
+        event_properties:provider = 'baseten' AND
+        event_properties:model_version ='v2' AND
+        event_properties:is_sampled = TRUE
+      ORDER BY time ASC;
+    `,
+    connection,
+  );
+  console.log(`Retrieved new predictions: ${feedbackEvents.length}`);
+
+  // Create predictions directory if it doesn't exist
+  const predictionsDir = path.join(__dirname, "../predictions");
+  if (!fs.existsSync(predictionsDir)) {
+    fs.mkdirSync(predictionsDir);
+  }
+
+  // Write feedback files
+  let lastTimestamp;
+  feedbackEvents.forEach((event) => {
+    const timestamp = formatDateWithNanos(event.TIME);
+    const filepath = `${predictionsDir}/${timestamp}.md`;
+
+    if (
+      event.INPUT_EVENTS.includes("<|") ||
+      event.INPUT_EVENTS.includes("|>")
+    ) {
+      console.log(`Skipping prediction because it contains invalid marker`);
+    } else {
+      const content = `<events>\n${event.INPUT_EVENTS}\n</events>
+<input>\n${event.INPUT_EXCERPT}\n</input>
+<output>\n${event.OUTPUT}\n</output>
+<outline>\n${event.OUTLINE}\n</outline>`;
+
+      fs.writeFileSync(filepath, content);
+      console.log(`Wrote prediction to ${filepath}`);
+    }
+
+    lastTimestamp = timestamp;
+  });
+
+  if (lastTimestamp) {
+    fs.writeFileSync(
+      LAST_PULL_TIMESTAMP_PATH,
+      `${lastTimestamp} +0000`,
+      "utf-8",
+    );
+  }
+}
+
+main();
