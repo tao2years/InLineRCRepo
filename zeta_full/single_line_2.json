@@ -1,0 +1,19 @@
+{ 
+	"mrcr_url": "https://codehub-g.huawei.com/applicationplatform/clouddragon-camp/camp/devuc/DevUCAccessMgmt/merge_requests/2609  ",
+	"file_path": "service/src/main/java/com/huawei/clouddragon/accessmgmt/model/hcs/ProjectRsp.java",
+	"code_type": "java",
+	"old_file": "/*\n * Copyright (c) Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.\n */\n\npackage com.huawei.clouddragon.accessmgmt.model.hcs;\n\nimport com.fasterxml.jackson.annotation.JsonProperty;\nimport lombok.Data;\n\nimport java.util.List;\n\n@Data\npublic class ProjectRsp {\n    @JsonProperty(\"total\")\n    private Long total;\n\n    @JsonProperty(\"result\")\n    private List<ProjectVo> result;\n}\n",
+	"new_file": "/*\n * Copyright (c) Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.\n */\n\npackage com.huawei.clouddragon.accessmgmt.model.hcs;\n\nimport com.fasterxml.jackson.annotation.JsonProperty;\nimport lombok.Data;\nimport lombok.Getter;\nimport lombok.Setter;\n\nimport java.util.List;\n\n@Getter\n@Setter\npublic class ProjectRsp {\n    @JsonProperty(\"total\")\n    private Long total;\n\n    @JsonProperty(\"result\")\n    private List<ProjectVo> result;\n}\n",
+	"old_hunk": "@@ -10,11 +7,12 @@\n-import com.fasterxml.jackson.databind.annotation.JsonNaming;\n-\n-import lombok.Getter;\n-import lombok.Setter;\n+import com.fasterxml.jackson.annotation.JsonProperty;\n+import lombok.Data;\n \n import java.util.List;\n \n-@Getter\n-@Setter\n-@JsonNaming(value = PropertyNamingStrategies.SnakeCaseStrategy.class)\n+@Data\n",
+	"new_hunk": "@@ -4,11 +4,8 @@\n \n package com.huawei.clouddragon.accessmgmt.model.hcs;\n \n-import com.huawei.clouddragon.accessmgmt.model.PageInfo;\n-\n-import com.fasterxml.jackson.databind.PropertyNamingStrategies;\n-import com.fasterxml.jackson.databind.annotation.JsonNaming;\n-\n+import com.fasterxml.jackson.annotation.JsonProperty;\n+import lombok.Data;\n import lombok.Getter;\n import lombok.Setter;\n \n@@ -16,9 +13,10 @@ import java.util.List;\n \n @Getter\n @Setter\n-@JsonNaming(value = PropertyNamingStrategies.SnakeCaseStrategy.class)\n public class ProjectRsp {\n-    private List<ProjectVo> result;\n+    @JsonProperty(\"total\")\n+    private Long total;\n \n-    private PageInfo pageInfo;\n+    @JsonProperty(\"result\")\n+    private List<ProjectVo> result;\n }\n",
+	"old_commit_id": "5aadb48bd4c08317a8774c0b5799aa6be473225e",
+	"new_commit_id": "df6ecb2e39f15f6e6da809bf73fe0a0430f0891c",
+	"review_line": 12,
+	"review_message": "【功能】不要用@Data， 保持之前的@Setter @Getter，会有编译告警",
+	"severity": "一般",
+	"category": "",
+	"author": "x00453981",
+	"start_line": 7,
+	"end_line": 12,
+	"code_with_line": "line 7:import com.fasterxml.jackson.annotation.JsonProperty;\nline 8:import lombok.Data;\nline 10:import java.util.List;\nline 12:@Data\nline 13:public class ProjectRsp {\nline 14:    @JsonProperty(\"total\")\nline 15:    private Long total;\nline 16:\nline 17:    @JsonProperty(\"result\")\nline 18:    private List<ProjectVo> result;\nline 19:}"
+}

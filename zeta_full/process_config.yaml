@@ -1,0 +1,204 @@
+# 数据处理管道配置文件
+
+# 质量控制参数
+quality_control:
+  # 最低质量阈值 (0.0-1.0)
+  quality_threshold: 0.6
+  
+  # 语法验证开关
+  enable_syntax_validation: true
+  
+  # 人工审核采样率
+  manual_review_sample_rate: 0.1
+
+# 光标位置推断参数
+cursor_inference:
+  # 不同语言的配置
+  language_configs:
+    java:
+      method_keywords: ["public", "private", "protected", "static"]
+      block_start: "{"
+      block_end: "}"
+      indent_size: 4
+    
+    python:
+      method_keywords: ["def", "class", "async def"]
+      block_start: ":"
+      block_end: null
+      indent_size: 4
+    
+    javascript:
+      method_keywords: ["function", "class", "const", "let", "var"]
+      block_start: "{"
+      block_end: "}"
+      indent_size: 2
+    
+    typescript:
+      method_keywords: ["function", "class", "interface", "type"]
+      block_start: "{"
+      block_end: "}"
+      indent_size: 2
+  
+  # 光标位置推断策略
+  inference_strategy: "heuristic"  # heuristic, ml_based, hybrid
+  
+  # 最大搜索范围（行数）
+  max_search_range: 20
+
+# 可编辑区域确定参数
+editable_region:
+  # 区域大小策略
+  sizing_strategy: "adaptive"  # minimal, adaptive, generous
+  
+  # 不同修改类型的区域大小
+  region_sizes:
+    minimal: 3      # 前后各3行
+    statement: 5    # 前后各5行
+    method: 15      # 前后各15行
+    class: 30       # 前后各30行
+  
+  # 区域边界检测
+  boundary_detection:
+    respect_code_blocks: true
+    respect_indentation: true
+    include_comments: true
+
+# 标签分类参数
+label_classification:
+  # 编辑位置分类阈值
+  location_thresholds:
+    local_edit_max_distance: 3    # 3行以内认为是local
+    non_local_edit_min_changes: 1 # 至少1个非local修改
+  
+  # 编辑意图分类规则
+  intent_rules:
+    import_keywords: ["import", "from", "include", "require"]
+    implementation_min_lines: 5   # 至少5行新增认为是实现
+    pattern_similarity_threshold: 0.7  # 相似度阈值
+    refactor_indent_change_ratio: 0.3  # 缩进变化比例阈值
+
+# 评估数据生成参数
+evaluation:
+  # assertions生成策略
+  assertion_generation:
+    enable_functionality_checks: true
+    enable_style_checks: true
+    enable_performance_checks: true
+    enable_security_checks: true
+  
+  # review消息解析模式
+  review_patterns:
+    functionality: ["功能性问题", "逻辑错误", "业务逻辑"]
+    style: ["代码风格", "命名规范", "格式问题"]
+    performance: ["性能问题", "效率优化", "资源使用"]
+    security: ["安全问题", "漏洞", "权限检查"]
+  
+  # 通用assertions模板
+  general_assertions:
+    - "Ensure that the test output maintains code syntax correctness"
+    - "Ensure that the test output preserves existing functionality"
+    - "Ensure that the test output follows language-specific conventions"
+
+# 数据集划分参数
+dataset_split:
+  # 划分比例
+  ratios:
+    train: 0.70
+    eval: 0.15
+    dpo: 0.15
+  
+  # 分层策略
+  stratification:
+    by_language: true
+    by_edit_type: true
+    by_complexity: true
+  
+  # DPO数据生成
+  dpo_generation:
+    rejected_samples_per_chosen: 2
+    rejection_strategies:
+      - "syntax_errors"
+      - "incomplete_edits"
+      - "over_edits"
+      - "wrong_location"
+
+# 输出格式参数
+output_format:
+  # 文件格式
+  train_file: "train.jsonl"
+  eval_file: "eval.jsonl"
+  dpo_file: "dpo.jsonl"
+  
+  # 字段包含设置
+  include_fields:
+    events: true
+    input: true
+    output: true
+    labels: true
+    assertions: true  # 仅评估数据
+    rejected: true    # 仅DPO数据
+  
+  # 格式验证
+  validation:
+    check_required_markers: true
+    check_label_format: true
+    check_code_syntax: false  # 可选，较耗时
+
+# 性能优化参数
+performance:
+  # 并行处理
+  enable_multiprocessing: true
+  max_workers: 4
+  
+  # 批处理大小
+  batch_size: 100
+  
+  # 内存管理
+  max_memory_usage: "2GB"
+  enable_garbage_collection: true
+
+# 日志和监控参数
+logging:
+  # 日志级别
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  
+  # 日志文件
+  log_file: "data_processing.log"
+  
+  # 进度报告
+  progress_report_interval: 100  # 每处理100个样本报告一次
+  
+  # 统计信息
+  enable_detailed_stats: true
+  stats_file: "processing_stats.json"
+
+# 错误处理参数
+error_handling:
+  # 错误容忍度
+  max_error_rate: 0.1  # 最大10%的错误率
+  
+  # 失败处理策略
+  on_failure: "skip"  # skip, retry, abort
+  
+  # 重试参数
+  max_retries: 3
+  retry_delay: 1  # 秒
+  
+  # 错误报告
+  error_report_file: "processing_errors.json"
+  include_stack_trace: true
+
+# 扩展功能参数
+extensions:
+  # 自定义处理器
+  custom_processors: []
+  
+  # 插件系统
+  enable_plugins: false
+  plugin_directory: "plugins/"
+  
+  # 外部工具集成
+  external_tools:
+    tree_sitter: false
+    language_servers: false
+    static_analyzers: false

@@ -32,7 +32,8 @@ def export_with_datasets():
     万一 snapshot_download 被墙/失败，就用 datasets 拉取数据并导出成文件。
     """
     print("==> snapshot_download 失败或你还想顺便导出结构化文件，开始用 datasets 加载并导出")
-    ds: DatasetDict = load_dataset(REPO_ID)   # 会自动缓存到本地 ~/.cache/huggingface/datasets
+    
+    ds: DatasetDict = load_dataset(REPO_ID)   # type: ignore # 会自动缓存到本地 ~/.cache/huggingface/datasets
     print(f"已加载 splits: {list(ds.keys())}")
 
     for split_name, split in ds.items():
